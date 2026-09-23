@@ -247,7 +247,10 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
         label: 'This file has no video stream.',
       );
     } else {
-      child = Video(controller: controller);
+      child = Video(
+        controller: controller,
+        controls: NoVideoControls,
+      );
     }
     return ColoredBox(
       color: Colors.black,
