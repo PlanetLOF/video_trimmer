@@ -10,6 +10,7 @@ import 'platform_util.dart';
 import 'save_dialog.dart';
 import 'shortcuts.dart';
 import 'start_end_row.dart';
+import 'theme.dart';
 import 'timeline.dart';
 import 'trim_dialog.dart';
 import 'video_session.dart';
@@ -30,11 +31,11 @@ class VideoTrimmerApp extends StatelessWidget {
       title: 'Video Trimmer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Color.fromARGB(255, 58, 183, 156)),
+        colorScheme: .fromSeed(seedColor: kSeedColor),
       ),
       darkTheme: ThemeData(
         colorScheme: .fromSeed(
-          seedColor: const Color.fromARGB(255, 58, 183, 156),
+          seedColor: kSeedColor,
           brightness: Brightness.dark,
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'ffmpeg.dart';
 import 'platform_util.dart';
+import 'theme.dart';
 
 const _kCancelRequested = -2;
 const _kSpawnFailed = -1;
@@ -59,8 +60,10 @@ void _handleOutcome(
       case 0:
         messenger2.showSnackBar(
           SnackBar(
+            backgroundColor: kSeedColor,
             content: Text('$name has been saved'),
             action: SnackBarAction(
+              textColor: Colors.black,
               label: 'Show in Files',
               onPressed: () => PlatformUtil.showInFiles(outputPath),
             ),
@@ -236,9 +239,22 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
           Text('Trimming…'),
         ],
       ),
-      content: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator()),
+      content: const SizedBox(
+        width: 340,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Please wait while your video is being trimmed.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
       actions: [
         TextButton(

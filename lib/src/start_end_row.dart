@@ -91,7 +91,7 @@ class _StartEndRowState extends State<StartEndRow> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 12),
       child: Row(
         children: [
           const Text('Start', style: TextStyle(fontSize: 12)),

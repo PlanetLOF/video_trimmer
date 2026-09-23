@@ -35,7 +35,7 @@ class _PlaybackBarState extends State<PlaybackBar> {
         final playing = session.playing;
         final position = session.position;
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
               IconButton(

@@ -108,34 +108,37 @@ class _TimelineState extends State<Timeline> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 40,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          return MouseRegion(
-            cursor: _isNearHandle(_hoverX, width)
-                ? SystemMouseCursors.resizeLeftRight
-                : SystemMouseCursors.basic,
-            onHover: (event) => _hoverX = event.localPosition.dx,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (details) =>
-                  _onDragStart(details.localPosition.dx, width),
-              onPanUpdate: (details) =>
-                  _onDragUpdate(details.localPosition.dx, width),
-              child: CustomPaint(
-                size: Size(width, 40),
-                painter: _TimelinePainter(
-                  durationMs: session.duration.inMilliseconds,
-                  positionMs: session.position.inMilliseconds,
-                  selection: session.selection,
-                  colorScheme: colorScheme,
+    return Padding(
+      padding: const EdgeInsets.only(left: 26, right: 26, top: 8, bottom: 4),
+      child: SizedBox(
+        height: 40,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            return MouseRegion(
+              cursor: _isNearHandle(_hoverX, width)
+                  ? SystemMouseCursors.resizeLeftRight
+                  : SystemMouseCursors.basic,
+              onHover: (event) => setState(() => _hoverX = event.localPosition.dx),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) =>
+                    _onDragStart(details.localPosition.dx, width),
+                onPanUpdate: (details) =>
+                    _onDragUpdate(details.localPosition.dx, width),
+                child: CustomPaint(
+                  size: Size(width, 40),
+                  painter: _TimelinePainter(
+                    durationMs: session.duration.inMilliseconds,
+                    positionMs: session.position.inMilliseconds,
+                    selection: session.selection,
+                    colorScheme: colorScheme,
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
