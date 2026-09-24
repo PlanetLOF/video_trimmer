@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../util/ffmpeg.dart';
 import '../util/platform_util.dart';
-import '../common/theme.dart';
 
 const _kCancelRequested = -2;
 const _kSpawnFailed = -1;
@@ -57,21 +56,22 @@ void _handleOutcome(
   final messenger2 = messenger;
   final name = _fileName(outputPath);
   switch (outcome.exitCode) {
-      case 0:
-        messenger2.showSnackBar(
-          SnackBar(
-            backgroundColor: kSeedColor,
-            content: Text('$name has been saved'),
-            action: SnackBarAction(
-              textColor: Colors.black,
-              label: 'Show in Files',
-              onPressed: () => PlatformUtil.showInFiles(outputPath),
-            ),
+    case 0:
+      final colorScheme = Theme.of(dialogContext).colorScheme;
+      messenger2.showSnackBar(
+        SnackBar(
+          backgroundColor: colorScheme.inverseSurface,
+          content: Text('$name has been saved'),
+          action: SnackBarAction(
+            textColor: colorScheme.onInverseSurface,
+            label: 'Show in Files',
+            onPressed: () => PlatformUtil.showInFiles(outputPath),
           ),
-        );
-        Navigator.of(dialogContext).pop();
-      case _kCancelRequested:
-        Navigator.of(dialogContext).pop();
+        ),
+      );
+      Navigator.of(dialogContext).pop();
+    case _kCancelRequested:
+      Navigator.of(dialogContext).pop();
     case _kSpawnFailed:
       showDialog<void>(
         context: dialogContext,
@@ -80,8 +80,8 @@ void _handleOutcome(
           content: Text(
             outcome.stderr.isEmpty
                 ? 'Make sure ffmpeg is installed and available on your PATH '
-                    'and that you have permission to write to the destination '
-                    'folder.'
+                      'and that you have permission to write to the destination '
+                      'folder.'
                 : outcome.stderr,
           ),
           actions: [
@@ -103,8 +103,10 @@ void _handleOutcome(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Please attach the following information to your '
-                    'issue report.'),
+                const Text(
+                  'Please attach the following information to your issue '
+                  'report.',
+                ),
                 const SizedBox(height: 12),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 240),
@@ -115,7 +117,7 @@ void _handleOutcome(
                       color: Theme.of(dialogContext)
                           .colorScheme
                           .surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: SingleChildScrollView(
                       child: SelectableText(
@@ -231,6 +233,7 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AlertDialog(
       title: const Row(
         children: [
@@ -239,18 +242,28 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
           Text('Trimming…'),
         ],
       ),
-      content: const SizedBox(
+      content: SizedBox(
         width: 340,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text(
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text(
                 'Please wait while your video is being trimmed.',
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _fileName(widget.outputPath ?? ''),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),

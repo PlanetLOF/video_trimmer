@@ -97,7 +97,8 @@ class Ffmpeg {
       final process = await Process.start(executable, ['-encoders']);
       final encoders = await utf8.decodeStream(process.stdout);
       await process.exitCode;
-      has = encoders.contains('libx264 V.') ||
+      has =
+          encoders.contains('libx264 V.') ||
           RegExp(r'\blibx264\b').hasMatch(encoders);
     } catch (_) {
       has = false;

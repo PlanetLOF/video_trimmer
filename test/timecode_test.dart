@@ -30,7 +30,10 @@ void main() {
       expect(timeToEntryText(const Duration(milliseconds: 1234)), '0:01.2');
       expect(timeToEntryText(const Duration(milliseconds: 2000)), '0:02.0');
       expect(timeToEntryText(const Duration(milliseconds: 67890)), '1:07.9');
-      expect(timeToEntryText(const Duration(milliseconds: 3600000)), '1:00:00.0');
+      expect(
+        timeToEntryText(const Duration(milliseconds: 3600000)),
+        '1:00:00.0',
+      );
     });
   });
 

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../common/video_session.dart';
 
-/// Displays editable start/end timestamp entries with validation styling and a
-/// Trim button. Two-way syncs with [VideoSession] so entries update from
+/// Bottom toolbar combining playback controls (step back / play-pause / step
+/// forward), the current/total time readout, editable start/end timestamp
+/// entries, and the Trim button — all in one row.
+///
+/// The time entries two-way sync with [VideoSession] so entries update from
 /// timeline drags and timeline handles update from the entries.
 class StartEndRow extends StatefulWidget {
   const StartEndRow({
@@ -79,49 +82,117 @@ class _StartEndRowState extends State<StartEndRow> {
     _session.setEndText(value);
   }
 
-  InputDecoration _decoration({required bool hasError}) {
+  String _formatPosition(Duration position) {
+    final hours = position.inHours;
+    final minutes = (position.inMinutes % 60).toString();
+    final seconds = (position.inSeconds % 60).toString().padLeft(2, '0');
+    if (hours == 0) {
+      return '$minutes:$seconds';
+    }
+    final h = hours.toString();
+    final m = (position.inMinutes % 60).toString().padLeft(2, '0');
+    return '$h:$m:$seconds';
+  }
+
+  InputDecoration _decoration({
+    required String label,
+    required IconData icon,
+    required bool hasError,
+    required VoidCallback onSetFromPlayhead,
+    required String setTooltip,
+  }) {
     return InputDecoration(
-      border: const UnderlineInputBorder(),
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      labelText: label,
+      prefixIcon: Icon(icon, size: 18),
+      prefixIconConstraints: const BoxConstraints(minWidth: 32),
+      suffixIcon: IconButton(
+        icon: const Icon(Icons.my_location, size: 18),
+        tooltip: setTooltip,
+        onPressed: onSetFromPlayhead,
+      ),
+      suffixIconConstraints: const BoxConstraints(minWidth: 32),
       errorText: hasError ? '' : null,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final mono = Theme.of(context).textTheme.bodyMedium
+        ?.copyWith(fontFamily: 'monospace');
+
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 12),
-      child: Row(
-        children: [
-          const Text('Start', style: TextStyle(fontSize: 12)),
-          const SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              controller: _startCtrl,
-              onChanged: _onStartChanged,
-              decoration: _decoration(hasError: _session.startError),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          children: [
+            IconButton.filled(
+              iconSize: 24,
+              icon: Icon(
+                _session.playing
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+              ),
+              tooltip: 'Play / Pause (Space)',
+              onPressed: _session.togglePlay,
             ),
-          ),
-          const SizedBox(width: 16),
-          const Text('End', style: TextStyle(fontSize: 12)),
-          const SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              controller: _endCtrl,
-              onChanged: _onEndChanged,
-              decoration: _decoration(hasError: _session.endError),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            const SizedBox(width: 4),
+            Container(width: 1, height: 20, color: colorScheme.outlineVariant),
+            const SizedBox(width: 10),
+            Text(
+              _formatPosition(_session.position),
+              style: mono?.copyWith(fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(width: 16),
-          FilledButton.icon(
-            onPressed: _session.selectionValid ? widget.onRequestTrim : null,
-            icon: const Icon(Icons.content_cut, size: 18),
-            label: const Text('Trim'),
-          ),
-        ],
+            Text(
+              ' / ${_formatPosition(_session.duration)}',
+              style: mono?.copyWith(color: colorScheme.outline),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: TextField(
+                controller: _startCtrl,
+                onChanged: _onStartChanged,
+                decoration: _decoration(
+                  label: 'Start',
+                  icon: Icons.flag_outlined,
+                  hasError: _session.startError,
+                  onSetFromPlayhead: _session.setStartAsPosition,
+                  setTooltip: 'Set start to current position (I)',
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _endCtrl,
+                onChanged: _onEndChanged,
+                decoration: _decoration(
+                  label: 'End',
+                  icon: Icons.flag_rounded,
+                  hasError: _session.endError,
+                  onSetFromPlayhead: _session.setEndAsPosition,
+                  setTooltip: 'Set end to current position (O)',
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              ),
+            ),
+            const SizedBox(width: 14),
+            FilledButton.icon(
+              onPressed: _session.selectionValid ? widget.onRequestTrim : null,
+              icon: const Icon(Icons.content_cut, size: 18),
+              label: const Text('Trim'),
+            ),
+          ],
+        ),
       ),
     );
   }

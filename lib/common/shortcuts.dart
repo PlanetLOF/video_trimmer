@@ -84,41 +84,39 @@ class AppShortcuts extends StatelessWidget {
         _StepBackIntent: CallbackAction<Intent>(
           onInvoke: (_) => _guard(session.stepBack),
         ),
-        _TrimIntent: CallbackAction<Intent>(
-          onInvoke: (_) => onTrim(),
-        ),
-        _OpenIntent: CallbackAction<Intent>(
-          onInvoke: (_) => onOpen(),
-        ),
-        _QuitIntent: CallbackAction<Intent>(
-          onInvoke: (_) => exit(0),
-        ),
+        _TrimIntent: CallbackAction<Intent>(onInvoke: (_) => onTrim()),
+        _OpenIntent: CallbackAction<Intent>(onInvoke: (_) => onOpen()),
+        _QuitIntent: CallbackAction<Intent>(onInvoke: (_) => exit(0)),
       },
       child: Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{
-        // Play/pause
-        const SingleActivator(LogicalKeyboardKey.space): const _PlayPauseIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyP): const _PlayPauseIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyK): const _PlayPauseIntent(),
-        const SingleActivator(LogicalKeyboardKey.space, control: true):
-            const _PlayPauseIntent(),
-        // Set start / end as current position
-        const SingleActivator(LogicalKeyboardKey.keyI): const _SetStartIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyO): const _SetEndIntent(),
-        // Frame stepping
-        const SingleActivator(LogicalKeyboardKey.period):
-            const _StepForwardIntent(),
-        const SingleActivator(LogicalKeyboardKey.comma):
-            const _StepBackIntent(),
-        // Trim
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            const _TrimIntent(),
-        // Open
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true):
-            const _OpenIntent(),
-        // Quit
-        const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
-            const _QuitIntent(),
+          // Play/pause
+          const SingleActivator(LogicalKeyboardKey.space):
+              const _PlayPauseIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyP):
+              const _PlayPauseIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyK):
+              const _PlayPauseIntent(),
+          const SingleActivator(LogicalKeyboardKey.space, control: true):
+              const _PlayPauseIntent(),
+          // Set start / end as current position
+          const SingleActivator(LogicalKeyboardKey.keyI):
+              const _SetStartIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyO): const _SetEndIntent(),
+          // Frame stepping
+          const SingleActivator(LogicalKeyboardKey.period):
+              const _StepForwardIntent(),
+          const SingleActivator(LogicalKeyboardKey.comma):
+              const _StepBackIntent(),
+          // Trim
+          const SingleActivator(LogicalKeyboardKey.keyS, control: true):
+              const _TrimIntent(),
+          // Open
+          const SingleActivator(LogicalKeyboardKey.keyO, control: true):
+              const _OpenIntent(),
+          // Quit
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true):
+              const _QuitIntent(),
         },
         child: child,
       ),

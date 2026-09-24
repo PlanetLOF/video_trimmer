@@ -6,6 +6,7 @@ import '../util/timecode.dart';
 import '../common/video_session.dart';
 
 const _tolerance = 5.0;
+const _trackHeight = 56.0;
 
 enum _DragType { scrub, start, end }
 
@@ -35,7 +36,6 @@ class _TimelineState extends State<Timeline> {
     final fraction = (ms / durationMs).clamp(0.0, 1.0).toDouble();
     return fraction * width;
   }
-
 
   void _onDragStart(double x, double width) {
     _dragType = _DragType.scrub;
@@ -107,11 +107,10 @@ class _TimelineState extends State<Timeline> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 26, right: 26, top: 8, bottom: 4),
       child: SizedBox(
-        height: 40,
+        height: _trackHeight,
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
@@ -119,7 +118,8 @@ class _TimelineState extends State<Timeline> {
               cursor: _isNearHandle(_hoverX, width)
                   ? SystemMouseCursors.resizeLeftRight
                   : SystemMouseCursors.basic,
-              onHover: (event) => setState(() => _hoverX = event.localPosition.dx),
+              onHover: (event) =>
+                  setState(() => _hoverX = event.localPosition.dx),
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onPanStart: (details) =>
@@ -127,12 +127,12 @@ class _TimelineState extends State<Timeline> {
                 onPanUpdate: (details) =>
                     _onDragUpdate(details.localPosition.dx, width),
                 child: CustomPaint(
-                  size: Size(width, 40),
+                  size: Size(width, _trackHeight),
                   painter: _TimelinePainter(
                     durationMs: session.duration.inMilliseconds,
                     positionMs: session.position.inMilliseconds,
                     selection: session.selection,
-                    colorScheme: colorScheme,
+                    colorScheme: Theme.of(context).colorScheme,
                   ),
                 ),
               ),
@@ -169,6 +169,10 @@ class _TimelinePainter extends CustomPainter {
     required this.colorScheme,
   });
 
+  static const _bandTop = 4.0;
+  static const _bandHeight = 36.0;
+  static const _labelBaseline = _bandTop + _bandHeight + 14;
+
   final int durationMs;
   final int positionMs;
   final (int, int)? selection;
@@ -176,11 +180,18 @@ class _TimelinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final trackPaint = Paint()
-      ..color = colorScheme.surfaceContainerHighest
-      ..strokeWidth = 2;
-    final trackY = size.height / 2;
-    canvas.drawLine(Offset(0, trackY), Offset(size.width, trackY), trackPaint);
+    final bandBottom = _bandTop + _bandHeight;
+    final trackY = _bandTop + _bandHeight / 2;
+
+    // Track background matched exactly to the band height, so the bar and its
+    // backdrop stay the same size.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(0, _bandTop, size.width, bandBottom),
+        const Radius.circular(6),
+      ),
+      Paint()..color = colorScheme.surfaceContainerHighest,
+    );
 
     if (durationMs <= 0) {
       return;
@@ -191,38 +202,120 @@ class _TimelinePainter extends CustomPainter {
       return fraction * size.width;
     }
 
-    final selection = this.selection;
-    if (selection != null) {
-      final (start, end) = selection;
-      final xStart = xForMs(start);
-      final xEnd = xForMs(end);
+    // Subtle tick marks to keep the track scannable.
+    final tickPaint = Paint()
+      ..color = colorScheme.outline.withValues(alpha: 0.35)
+      ..strokeWidth = 1;
+    const tickCount = 48;
+    for (var i = 1; i < tickCount; i++) {
+      final x = size.width * i / tickCount;
+      canvas.drawLine(
+        Offset(x, _bandTop + 3),
+        Offset(x, _bandTop + 6),
+        tickPaint,
+      );
+      canvas.drawLine(
+        Offset(x, bandBottom - 6),
+        Offset(x, bandBottom - 3),
+        tickPaint,
+      );
+    }
+
+    final sel = selection;
+    if (sel != null) {
+      final (start, end) = sel;
+      final xStart = xForMs(start).clamp(0.0, size.width);
+      final xEnd = xForMs(end).clamp(0.0, size.width);
       if (xEnd > xStart) {
-        final selectionRect = Rect.fromLTRB(xStart, trackY - 10, xEnd, trackY + 10);
+        // Selection band.
+        final bandRect = Rect.fromLTRB(xStart, _bandTop, xEnd, bandBottom);
         canvas.drawRRect(
-          RRect.fromRectAndRadius(selectionRect, const Radius.circular(4)),
-          Paint()..color = colorScheme.primary.withValues(alpha: 0.35),
+          RRect.fromRectAndRadius(bandRect, const Radius.circular(5)),
+          Paint()..color = colorScheme.primary.withValues(alpha: 0.38),
         );
-        final handlePaint = Paint()..color = colorScheme.primary;
-        canvas.drawRect(
-          Rect.fromLTWH(xStart - 2, trackY - 12, 4, 24),
-          handlePaint,
+
+        // Handles.
+        _drawHandle(canvas, xStart, _bandTop, bandBottom);
+        _drawHandle(canvas, xEnd, _bandTop, bandBottom);
+
+        // Timecode labels under the handles.
+        _drawLabel(
+          canvas,
+          size.width,
+          timeToEntryText(Duration(milliseconds: start)),
+          xStart,
         );
-        canvas.drawRect(
-          Rect.fromLTWH(xEnd - 2, trackY - 12, 4, 24),
-          handlePaint,
+        _drawLabel(
+          canvas,
+          size.width,
+          timeToEntryText(Duration(milliseconds: end)),
+          xEnd,
         );
       }
     }
 
+    // Playhead.
     final xPosition = xForMs(positionMs).clamp(0.0, size.width);
-    final positionPaint = Paint()
+    final playheadPaint = Paint()
       ..color = colorScheme.onSurface
       ..strokeWidth = 2;
     canvas.drawLine(
-      Offset(xPosition, trackY - 12),
-      Offset(xPosition, trackY + 12),
-      positionPaint,
+      Offset(xPosition, trackY - 14),
+      Offset(xPosition, trackY + 14),
+      playheadPaint,
     );
+    canvas.drawCircle(
+      Offset(xPosition, trackY - 14),
+      4,
+      Paint()..color = colorScheme.onSurface,
+    );
+  }
+
+  void _drawHandle(Canvas canvas, double x, double bandTop, double bandBottom) {
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTRB(x - 6, bandTop - 3, x + 6, bandBottom + 3),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(rect, Paint()..color = colorScheme.primary);
+    // Grip bar.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTRB(x - 1.5, bandTop + 8, x + 1.5, bandBottom - 8),
+        const Radius.circular(1),
+      ),
+      Paint()..color = colorScheme.onPrimary.withValues(alpha: 0.9),
+    );
+  }
+
+  void _drawLabel(Canvas canvas, double width, String text, double centerX) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'monospace',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final maxX = width - painter.width - 2;
+    final x = maxX < 2.0
+        ? (width - painter.width) / 2
+        : (centerX - painter.width / 2).clamp(2.0, maxX);
+    final top = _labelBaseline - painter.height;
+
+    final bg = RRect.fromRectAndRadius(
+      Rect.fromLTWH(x - 3, top - 1, painter.width + 6, painter.height + 2),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(
+      bg,
+      Paint()..color = colorScheme.surface.withValues(alpha: 0.85),
+    );
+    painter.paint(canvas, Offset(x, top));
   }
 
   @override

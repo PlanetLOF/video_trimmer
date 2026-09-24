@@ -23,8 +23,34 @@ void main() {
     expect(find.text('Trim'), findsNothing);
   });
 
-  testWidgets('trim button is disabled until a valid selection exists',
-      (tester) async {
+  testWidgets('theme toggle switches between light and dark', (tester) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(VideoTrimmerApp(session: session));
+    await tester.pumpAndSettle();
+
+    final toggle = find.byTooltip('Toggle theme');
+    expect(toggle, findsOneWidget);
+
+    Icon iconOf() => tester.widget<Icon>(
+      find.descendant(of: toggle, matching: find.byType(Icon)),
+    );
+
+    // Test environment defaults to a light platform brightness.
+    expect(iconOf().icon, Icons.light_mode_outlined);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(iconOf().icon, Icons.dark_mode_outlined);
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+  });
+
+  testWidgets('trim button is disabled until a valid selection exists', (
+    tester,
+  ) async {
     final session = VideoSession(initOnConstruct: false);
     addTearDown(session.dispose);
 
@@ -36,15 +62,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    var trimButton =
-        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Trim'));
+    var trimButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Trim'),
+    );
     expect(trimButton.onPressed, isNull);
 
     session.setStartText('0:00:01');
     await tester.pump();
 
-    trimButton =
-        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Trim'));
+    trimButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Trim'),
+    );
     expect(trimButton.onPressed, isNotNull);
   });
 }

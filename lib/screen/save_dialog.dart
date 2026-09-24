@@ -60,9 +60,7 @@ String suggestedOutputFilename(
 
   final startText = normalize(start);
   final endText = normalize(end);
-  return PlatformUtil.sanitizeFileName(
-    '$stem ($startText - $endText).$ext',
-  );
+  return PlatformUtil.sanitizeFileName('$stem ($startText - $endText).$ext');
 }
 
 /// Shows the native save dialog with a suggested filename and initial

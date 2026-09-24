@@ -14,7 +14,7 @@ import '../util/timecode.dart';
 /// be tested without a running player.
 class VideoSession extends ChangeNotifier {
   VideoSession({Probe? probe, bool initOnConstruct = true})
-      : _probe = probe ?? Probe() {
+    : _probe = probe ?? Probe() {
     if (initOnConstruct) {
       init();
     }
@@ -83,8 +83,7 @@ class VideoSession extends ChangeNotifier {
       _startMs != null && _endMs != null && _startMs! < _endMs!;
 
   /// A snapshot of the valid selection used for trimming.
-  (int, int)? get selection =>
-      selectionValid ? (_startMs!, _endMs!) : null;
+  (int, int)? get selection => selectionValid ? (_startMs!, _endMs!) : null;
 
   /// Creates the media_kit player and subscribes to its streams. Safe to call
   /// multiple times; errors are swallowed so the UI can show them instead.
@@ -96,34 +95,47 @@ class VideoSession extends ChangeNotifier {
       final player = Player();
       _player = player;
       _controller = VideoController(player);
-      _subscriptions.add(player.stream.position.listen((value) {
-        _position = value;
-        notifyListeners();
-      }));
-      _subscriptions.add(player.stream.duration.listen((value) {
-        final firstDuration = _duration == Duration.zero && value != Duration.zero;
-        _duration = value;
-        if (firstDuration) {
-          _applyDefaultEntries();
-        }
-        notifyListeners();
-      }));
-      _subscriptions.add(player.stream.playing.listen((value) {
-        _playing = value;
-        notifyListeners();
-      }));
-      _subscriptions.add(player.stream.buffering.listen((value) {
-        _loading = value;
-        notifyListeners();
-      }));
-      _subscriptions.add(player.stream.error.listen((error) {
-        _hasError = true;
-        notifyListeners();
-      }));
-      _subscriptions.add(player.stream.width.listen((width) {
-        _hasVideo = (width ?? 0) > 0;
-        notifyListeners();
-      }));
+      _subscriptions.add(
+        player.stream.position.listen((value) {
+          _position = value;
+          notifyListeners();
+        }),
+      );
+      _subscriptions.add(
+        player.stream.duration.listen((value) {
+          final firstDuration =
+              _duration == Duration.zero && value != Duration.zero;
+          _duration = value;
+          if (firstDuration) {
+            _applyDefaultEntries();
+          }
+          notifyListeners();
+        }),
+      );
+      _subscriptions.add(
+        player.stream.playing.listen((value) {
+          _playing = value;
+          notifyListeners();
+        }),
+      );
+      _subscriptions.add(
+        player.stream.buffering.listen((value) {
+          _loading = value;
+          notifyListeners();
+        }),
+      );
+      _subscriptions.add(
+        player.stream.error.listen((error) {
+          _hasError = true;
+          notifyListeners();
+        }),
+      );
+      _subscriptions.add(
+        player.stream.width.listen((width) {
+          _hasVideo = (width ?? 0) > 0;
+          notifyListeners();
+        }),
+      );
       _ready.complete();
     } catch (error) {
       debugPrint('VideoSession: media_kit init failed: $error');
@@ -225,7 +237,8 @@ class VideoSession extends ChangeNotifier {
     _startMs = timestamp(_startText ?? '');
     _endMs = timestamp(_endText ?? '');
     _startError = _startMs == null;
-    _endError = _endMs == null ||
+    _endError =
+        _endMs == null ||
         (_startMs != null && _endMs != null && _startMs! >= _endMs!);
   }
 

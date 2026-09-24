@@ -54,9 +54,7 @@ class Probe {
           denominator <= 0) {
         return null;
       }
-      return Duration(
-        microseconds: (denominator / numerator * 1e6).round(),
-      );
+      return Duration(microseconds: (denominator / numerator * 1e6).round());
     }
     return null;
   }
@@ -87,7 +85,9 @@ class Probe {
     }
     final output = StringBuffer();
     await for (final line
-        in process.stdout.transform(utf8.decoder).transform(const LineSplitter())) {
+        in process.stdout
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())) {
       output.writeln(line);
     }
     final exitCode = await process.exitCode;
