@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:video_trimmer/src/app.dart';
-import 'package:video_trimmer/src/start_end_row.dart';
-import 'package:video_trimmer/src/video_session.dart';
+import 'package:video_trimmer/screen/app.dart';
+import 'package:video_trimmer/screen/start_end_row.dart';
+import 'package:video_trimmer/common/video_session.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(home: Scaffold(body: child));

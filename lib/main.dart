@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
-import 'src/app.dart';
-import 'src/platform_util.dart';
+import 'screen/app.dart';
+import 'util/platform_util.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

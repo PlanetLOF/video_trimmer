@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'timecode.dart';
-import 'video_session.dart';
+import '../util/timecode.dart';
+import '../common/video_session.dart';
 
 const _tolerance = 5.0;
 

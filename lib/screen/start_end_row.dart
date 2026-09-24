@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'video_session.dart';
+import '../common/video_session.dart';
 
 /// Displays editable start/end timestamp entries with validation styling and a
 /// Trim button. Two-way syncs with [VideoSession] so entries update from

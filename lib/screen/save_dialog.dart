@@ -4,8 +4,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
-import 'timecode.dart';
-import 'platform_util.dart';
+import '../util/timecode.dart';
+import '../util/platform_util.dart';
 
 /// Computes the default output container for a video file, taking into
 /// account the PCM audio flag that forces the output to MKV.

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_trimmer/src/ffmpeg.dart';
+import 'package:video_trimmer/util/ffmpeg.dart';
 
 void main() {
   group('buildTrimArgs', () {

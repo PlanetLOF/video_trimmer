@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'about_dialog.dart';
-import 'ffmpeg.dart';
+import '../util/ffmpeg.dart';
 import 'open_dialog.dart';
 import 'playback_bar.dart';
-import 'platform_util.dart';
+import '../util/platform_util.dart';
 import 'save_dialog.dart';
-import 'shortcuts.dart';
+import '../common/shortcuts.dart';
 import 'start_end_row.dart';
-import 'theme.dart';
+import '../common/theme.dart';
 import 'timeline.dart';
 import 'trim_dialog.dart';
-import 'video_session.dart';
+import '../common/video_session.dart';
 
 class VideoTrimmerApp extends StatelessWidget {
   const VideoTrimmerApp({

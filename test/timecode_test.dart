@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_trimmer/src/timecode.dart';
+import 'package:video_trimmer/util/timecode.dart';
 
 void main() {
   group('timestamp', () {

@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import 'probe.dart';
-import 'timecode.dart';
+import '../util/probe.dart';
+import '../util/timecode.dart';
 
 /// Owns the media_kit [Player], the playback streams, and the trim selection
 /// state. The source of truth for position/duration/selection that the UI

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:video_trimmer/src/probe.dart';
+import 'package:video_trimmer/util/probe.dart';
 
 void main() {
   group('hasPcmAudio', () {

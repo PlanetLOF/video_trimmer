@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'ffmpeg.dart';
-import 'platform_util.dart';
-import 'theme.dart';
+import '../util/ffmpeg.dart';
+import '../util/platform_util.dart';
+import '../common/theme.dart';
 
 const _kCancelRequested = -2;
 const _kSpawnFailed = -1;

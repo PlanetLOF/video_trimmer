@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'video_session.dart';
+import '../common/video_session.dart';
 
 /// Play/pause button and current-time label.
 class PlaybackBar extends StatefulWidget {
