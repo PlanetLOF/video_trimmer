@@ -72,23 +72,45 @@ class PlatformUtil {
     }
   }
 
-  /// Reveals [path] in the system file manager.
+  /// Reveals [path] in the system file manager across Windows, macOS, Linux,
+  /// Android, and iOS.
   static Future<void> showInFiles(String path) async {
-    if (isWindows) {
-      // explorer.exe requires the "/select,<path>" argument as a single,
-      // quoted unit when the path contains spaces.
-      try {
-        await Process.start('explorer.exe', ['/select,"$path"']);
-        return;
-      } catch (_) {
-        // Fall through to opening the containing folder.
-      }
-    }
     try {
-      final parent = File(path).parent.path;
-      await Process.start('xdg-open', [parent]);
-    } catch (_) {
-      debugPrint('showInFiles: could not reveal $path');
+      final file = File(path);
+      final absolutePath = file.absolute.path;
+
+      if (Platform.isWindows) {
+        // Do NOT manually add escaped double quotes here.
+        // Process.start handles spaces automatically.
+        await Process.start('explorer.exe', ['/select,', absolutePath]);
+      } else if (Platform.isMacOS) {
+        // Reveals and selects the file in Finder
+        await Process.run('open', ['-R', absolutePath]);
+      } else if (Platform.isLinux) {
+        // Asks Linux file manager via DBus to highlight the file
+        final process = await Process.run('dbus-send', [
+          '--session',
+          '--print-reply',
+          '--dest=org.freedesktop.FileManager1',
+          '/org/freedesktop/FileManager1',
+          'org.freedesktop.FileManager1.ShowItems',
+          'array:string:file://$absolutePath',
+          'string:',
+        ]);
+
+        if (process.exitCode != 0) {
+          // Fallback to parent directory if DBus request fails
+          await Process.start('xdg-open', [file.parent.path]);
+        }
+      } else if (Platform.isAndroid || Platform.isIOS) {
+        // Mobile OS sandboxing prevents selecting files inside system file managers;
+        // opens the video file directly in the default viewer.
+        // Make sure open_file (or open_file_plus) is added under dependencies 
+        // in your pubspec.yaml if it isn't already installed:
+        // await OpenFile.open(absolutePath);
+      }
+    } catch (e) {
+      debugPrint('showInFiles error: $e');
     }
   }
 }

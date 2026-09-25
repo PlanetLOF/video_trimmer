@@ -60,6 +60,7 @@ void _handleOutcome(
       final colorScheme = Theme.of(dialogContext).colorScheme;
       messenger2.showSnackBar(
         SnackBar(
+          duration: Duration(seconds: 60),
           backgroundColor: colorScheme.inverseSurface,
           content: Text('$name has been saved'),
           action: SnackBarAction(
