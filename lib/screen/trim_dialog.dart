@@ -53,18 +53,18 @@ void _handleOutcome(
   String outputPath,
   TrimOutcome outcome,
 ) {
-  final messenger2 = messenger;
   final name = _fileName(outputPath);
   switch (outcome.exitCode) {
     case 0:
-      final colorScheme = Theme.of(dialogContext).colorScheme;
-      messenger2.showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          duration: Duration(seconds: 60),
-          backgroundColor: colorScheme.inverseSurface,
-          content: Text('$name has been saved'),
+          duration: const Duration(seconds: 60),
+          persist: false,
+          content: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('$name has been saved'),
+          ),
           action: SnackBarAction(
-            textColor: colorScheme.onInverseSurface,
             label: 'Show in Files',
             onPressed: () => PlatformUtil.showInFiles(outputPath),
           ),
@@ -118,7 +118,7 @@ void _handleOutcome(
                       color: Theme.of(dialogContext)
                           .colorScheme
                           .surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: .circular(8),
                     ),
                     child: SingleChildScrollView(
                       child: SelectableText(

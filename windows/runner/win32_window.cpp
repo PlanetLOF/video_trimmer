@@ -18,6 +18,10 @@ namespace {
 
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
+// Smallest size the window may be resized to, in logical pixels.
+constexpr int kMinWindowWidth = 800;
+constexpr int kMinWindowHeight = 400;
+
 /// Registry key for app theme preference.
 ///
 /// A value of 0 indicates apps should use dark mode. A non-zero or missing
@@ -195,6 +199,13 @@ Win32Window::MessageHandler(HWND hwnd,
       SetWindowPos(hwnd, nullptr, newRectSize->left, newRectSize->top, newWidth,
                    newHeight, SWP_NOZORDER | SWP_NOACTIVATE);
 
+      return 0;
+    }
+    case WM_GETMINMAXINFO: {
+      auto min_max_info = reinterpret_cast<MINMAXINFO*>(lparam);
+      const double scale = FlutterDesktopGetDpiForHWND(hwnd) / 96.0;
+      min_max_info->ptMinTrackSize.x = Scale(kMinWindowWidth, scale);
+      min_max_info->ptMinTrackSize.y = Scale(kMinWindowHeight, scale);
       return 0;
     }
     case WM_SIZE: {

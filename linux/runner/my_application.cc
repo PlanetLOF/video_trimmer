@@ -52,7 +52,9 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "video_trimmer");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  // Startup size, and the smallest size the window can be resized to.
+  gtk_window_set_default_size(window, 960, 600);
+  gtk_widget_set_size_request(GTK_WIDGET(window), 800, 400);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

@@ -275,8 +275,8 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
           padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: .circular(20),
+            border: .all(color: colorScheme.outlineVariant),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -339,8 +339,8 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: colorScheme.primary, width: 2),
+                borderRadius: .circular(20),
+                border: .all(color: colorScheme.primary, width: 2),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -374,6 +374,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
 
   Widget _buildVideoArea(BuildContext context) {
     final controller = session.controller;
+    final colorScheme = Theme.of(context).colorScheme;
     final Widget child;
     if (session.hasError) {
       child = _MessageView(
@@ -399,11 +400,17 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
     }
     return Padding(
       padding: const EdgeInsets.all(10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: ColoredBox(
-          color: Colors.black,
-          child: SizedBox.expand(child: child),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: .circular(12),
+          border: .all(color: colorScheme.primary, width: 2),
+        ),
+        child: ClipRRect(
+          borderRadius: .circular(9),
+          child: ColoredBox(
+            color: Colors.black,
+            child: SizedBox.expand(child: child),
+          ),
         ),
       ),
     );

@@ -1,17 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 
-/// The seed color for the app color scheme. Kept in one place so the theme
-/// and UI accents (e.g. SnackBar) stay in sync.
-const Color kSeedColor = Color(0xFF3AB79C);
+const Color kSeedColor = Colors.pink;
 
-/// Builds the full app [ThemeData] for the given [brightness].
-///
-/// Keeps Material 3 components (rounded buttons, filled text fields, outlined
-/// dialogs) tuned for a compact desktop layout.
 ThemeData buildAppTheme(Brightness brightness) {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: kSeedColor,
     brightness: brightness,
+    dynamicSchemeVariant: .vibrant,
   );
   final base = ThemeData(brightness: brightness);
   final textTheme = base.textTheme;
@@ -36,20 +31,20 @@ ThemeData buildAppTheme(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, 40),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: .circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 20),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 40),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: .circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 16),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: .circular(8)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -58,23 +53,23 @@ ThemeData buildAppTheme(Brightness brightness) {
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: .circular(10),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: .circular(10),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: .circular(10),
         borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: .circular(10),
         borderSide: BorderSide(color: colorScheme.error, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: .circular(10),
         borderSide: BorderSide(color: colorScheme.error, width: 1.5),
       ),
       labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
@@ -82,22 +77,23 @@ ThemeData buildAppTheme(Brightness brightness) {
     dialogTheme: DialogThemeData(
       backgroundColor: colorScheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: .circular(16)),
       titleTextStyle: textTheme.titleLarge?.copyWith(
         color: colorScheme.onSurface,
         fontWeight: FontWeight.w600,
       ),
     ),
     snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: colorScheme.inverseSurface,
-      contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: colorScheme.primary,
+      contentTextStyle: textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onPrimary,
+      ),
+      actionTextColor: colorScheme.onPrimary,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
         color: colorScheme.inverseSurface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: .circular(6),
       ),
       textStyle: TextStyle(color: colorScheme.onInverseSurface, fontSize: 12),
       waitDuration: const Duration(milliseconds: 400),
@@ -105,7 +101,7 @@ ThemeData buildAppTheme(Brightness brightness) {
     popupMenuTheme: PopupMenuThemeData(
       color: colorScheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: .circular(10)),
     ),
     dividerTheme: DividerThemeData(
       color: colorScheme.outlineVariant.withValues(alpha: 0.5),

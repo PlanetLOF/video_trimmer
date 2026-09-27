@@ -127,8 +127,8 @@ class _StartEndRowState extends State<StartEndRow> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+          borderRadius: .circular(12),
+          border: .all(
             color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
