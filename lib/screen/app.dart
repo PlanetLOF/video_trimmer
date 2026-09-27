@@ -1,5 +1,5 @@
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'about_dialog.dart';
@@ -388,6 +388,13 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
         label: 'This file has no video stream.',
       );
     } else {
+      // media_kit_video 2.0.1 still imports the legacy `package:flutter/material.dart`,
+      // so none of its widgets can see this app's `material_ui` ThemeData. That is fine
+      // here because `NoVideoControls` disables the built-in controls and subtitles are
+      // never enabled, so no legacy widget is actually built. If either is turned on,
+      // wrap this subtree in `MaterialUiCompatibilityBridge` from `package:material_ui`
+      // so the legacy widgets resolve the app theme. The bridge is deprecated as of
+      // material_ui 1.4.0 and will be removed in a future release.
       child = Video(controller: controller, controls: NoVideoControls);
     }
     return Padding(

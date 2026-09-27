@@ -105,7 +105,7 @@ class PlatformUtil {
       } else if (Platform.isAndroid || Platform.isIOS) {
         // Mobile OS sandboxing prevents selecting files inside system file managers;
         // opens the video file directly in the default viewer.
-        // Make sure open_file (or open_file_plus) is added under dependencies 
+        // Make sure open_file (or open_file_plus) is added under dependencies
         // in your pubspec.yaml if it isn't already installed:
         // await OpenFile.open(absolutePath);
       }

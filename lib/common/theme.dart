@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The seed color for the app color scheme. Kept in one place so the theme
 /// and UI accents (e.g. SnackBar) stay in sync.

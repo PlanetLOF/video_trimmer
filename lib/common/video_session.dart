@@ -94,7 +94,13 @@ class VideoSession extends ChangeNotifier {
     try {
       final player = Player();
       _player = player;
-      _controller = VideoController(player);
+      _controller = VideoController(
+        player,
+        configuration: VideoControllerConfiguration(
+          vo: 'libmpv',
+          hwdec: 'auto-safe',
+        ),
+      );
       _subscriptions.add(
         player.stream.position.listen((value) {
           _position = value;
