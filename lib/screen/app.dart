@@ -7,7 +7,9 @@ import '../util/ffmpeg.dart';
 import 'open_dialog.dart';
 import '../util/platform_util.dart';
 import 'save_dialog.dart';
+import '../common/app_settings.dart';
 import '../common/shortcuts.dart';
+import 'settings_dialog.dart';
 import 'start_end_row.dart';
 import '../common/theme.dart';
 import 'timeline.dart';
@@ -19,30 +21,25 @@ class VideoTrimmerApp extends StatefulWidget {
     super.key,
     this.session,
     this.binariesMissing = const [],
+    this.initialSettings = const AppSettings(),
+    this.settingsStore,
   });
 
   final VideoSession? session;
   final List<String> binariesMissing;
+  final AppSettings initialSettings;
+  final AppSettingsStore? settingsStore;
 
   @override
   State<VideoTrimmerApp> createState() => _VideoTrimmerAppState();
 }
 
 class _VideoTrimmerAppState extends State<VideoTrimmerApp> {
-  ThemeMode _themeMode = ThemeMode.system;
+  late AppSettings _settings = widget.initialSettings;
 
-  bool get _systemIsDark =>
-      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-      Brightness.dark;
-
-  void _toggleThemeMode() {
-    setState(() {
-      _themeMode = switch (_themeMode) {
-        ThemeMode.system => _systemIsDark ? ThemeMode.light : ThemeMode.dark,
-        ThemeMode.dark => ThemeMode.light,
-        ThemeMode.light => ThemeMode.dark,
-      };
-    });
+  void _changeSettings(AppSettings settings) {
+    setState(() => _settings = settings);
+    widget.settingsStore?.save(settings).ignore();
   }
 
   @override
@@ -50,14 +47,14 @@ class _VideoTrimmerAppState extends State<VideoTrimmerApp> {
     return MaterialApp(
       title: 'Video Trimmer',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(Brightness.light),
-      darkTheme: buildAppTheme(Brightness.dark),
-      themeMode: _themeMode,
+      theme: buildAppTheme(brightness: .light, accent: _settings.accent),
+      darkTheme: buildAppTheme(brightness: .dark, accent: _settings.accent),
+      themeMode: _settings.themeMode,
       home: widget.binariesMissing.isEmpty
           ? VideoTrimmerHome(
               session: widget.session,
-              themeMode: _themeMode,
-              onToggleTheme: _toggleThemeMode,
+              settings: _settings,
+              onSettingsChanged: _changeSettings,
             )
           : MissingBinariesPage(binariesMissing: widget.binariesMissing),
     );
@@ -68,13 +65,13 @@ class VideoTrimmerHome extends StatefulWidget {
   const VideoTrimmerHome({
     super.key,
     this.session,
-    this.themeMode = ThemeMode.system,
-    this.onToggleTheme,
+    this.settings = const AppSettings(),
+    this.onSettingsChanged,
   });
 
   final VideoSession? session;
-  final ThemeMode themeMode;
-  final VoidCallback? onToggleTheme;
+  final AppSettings settings;
+  final ValueChanged<AppSettings>? onSettingsChanged;
 
   @override
   State<VideoTrimmerHome> createState() => _VideoTrimmerHomeState();
@@ -87,16 +84,6 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   bool _dragOver = false;
 
   VideoSession get session => _session;
-
-  bool get _appDark {
-    final systemDark =
-        MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-    return switch (widget.themeMode) {
-      ThemeMode.dark => true,
-      ThemeMode.light => false,
-      ThemeMode.system => systemDark,
-    };
-  }
 
   @override
   void initState() {
@@ -221,13 +208,6 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
         ],
       ),
       actions: [
-        IconButton(
-          icon: Icon(
-            _appDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-          ),
-          tooltip: 'Toggle theme',
-          onPressed: widget.onToggleTheme,
-        ),
         PopupMenuButton<String>(
           onSelected: (value) {
             switch (value) {
@@ -237,6 +217,12 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
                 session.setPrecise(!session.precise);
               case 'removeAudio':
                 session.setRemoveAudio(!session.removeAudio);
+              case 'settings':
+                showSettingsDialog(
+                  context,
+                  settings: widget.settings,
+                  onChanged: widget.onSettingsChanged ?? (_) {},
+                );
               case 'about':
                 showVideoTrimmerAboutDialog(context);
             }
@@ -255,6 +241,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
               child: const Text('Remove audio'),
             ),
             const PopupMenuDivider(),
+            const PopupMenuItem(value: 'settings', child: Text('Settings…')),
             const PopupMenuItem(
               value: 'about',
               child: Text('About Video Trimmer'),

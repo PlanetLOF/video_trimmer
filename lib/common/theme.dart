@@ -2,11 +2,33 @@ import 'package:material_ui/material_ui.dart';
 
 import 'typography.dart';
 
-const Color kSeedColor = Colors.pink;
+/// The accent colours the user can pick from in the settings dialog.
+///
+/// [seed] is fed to [ColorScheme.fromSeed]; [label] is only used for the
+/// tooltip on the settings swatch.
+enum AppAccent {
+  pink(Colors.pink, 'Pink'),
+  red(Colors.red, 'Red'),
+  orange(Colors.orange, 'Orange'),
+  yellow(Colors.yellow, 'Yellow'),
+  green(Colors.green, 'Green'),
+  teal(Colors.teal, 'Teal'),
+  blue(Colors.blue, 'Blue'),
+  purple(Colors.purple, 'Purple'),
+  brown(Colors.brown, 'Brown');
 
-ThemeData buildAppTheme(Brightness brightness) {
+  const AppAccent(this.seed, this.label);
+
+  final Color seed;
+  final String label;
+}
+
+ThemeData buildAppTheme({
+  required Brightness brightness,
+  required AppAccent accent,
+}) {
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: kSeedColor,
+    seedColor: accent.seed,
     brightness: brightness,
     dynamicSchemeVariant: .vibrant,
   );
