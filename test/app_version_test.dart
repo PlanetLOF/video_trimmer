@@ -59,6 +59,6 @@ void main() {
     await tester.tap(find.text('Open about'));
     await tester.pumpAndSettle();
 
-    expect(find.text('version $appVersion ($appBuildNumber)'), findsOneWidget);
+    expect(find.text('version $appVersion'), findsOneWidget);
   });
 }

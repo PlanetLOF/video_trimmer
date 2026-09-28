@@ -4,6 +4,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'about_sheet.dart';
 import '../util/ffmpeg.dart';
+import 'app_menu.dart';
 import 'open_dialog.dart';
 import '../util/platform_util.dart';
 import 'save_dialog.dart';
@@ -208,45 +209,26 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
         ],
       ),
       actions: [
-        PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'open':
+        PopupMenuButton<AppMenuAction>(
+          onSelected: (action) {
+            switch (action) {
+              case AppMenuAction.open:
                 _openVideo(null);
-              case 'precise':
+              case AppMenuAction.precise:
                 session.setPrecise(!session.precise);
-              case 'removeAudio':
+              case AppMenuAction.removeAudio:
                 session.setRemoveAudio(!session.removeAudio);
-              case 'settings':
+              case AppMenuAction.settings:
                 showSettingsSheet(
                   context,
                   settings: widget.settings,
                   onChanged: widget.onSettingsChanged ?? (_) {},
                 );
-              case 'about':
+              case AppMenuAction.about:
                 showVideoTrimmerAboutSheet(context);
             }
           },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'open', child: Text('Open…')),
-            const PopupMenuDivider(),
-            CheckedPopupMenuItem(
-              value: 'precise',
-              checked: session.precise,
-              child: const Text('Precise (re-encode)'),
-            ),
-            CheckedPopupMenuItem(
-              value: 'removeAudio',
-              checked: session.removeAudio,
-              child: const Text('Remove audio'),
-            ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(value: 'settings', child: Text('Settings…')),
-            const PopupMenuItem(
-              value: 'about',
-              child: Text('About Video Trimmer'),
-            ),
-          ],
+          itemBuilder: (context) => buildAppMenuEntries(session),
         ),
       ],
     );

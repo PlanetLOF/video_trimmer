@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:video_trimmer/screen/app.dart';
+import 'package:video_trimmer/screen/app_menu.dart';
+import 'package:video_trimmer/screen/settings_sheet.dart';
 import 'package:video_trimmer/screen/start_end_row.dart';
 import 'package:video_trimmer/generated/app_version.g.dart';
 import 'package:video_trimmer/common/typography.dart';
@@ -32,11 +34,23 @@ Future<VideoSession> _pumpApp(
 }
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.byType(PopupMenuButton<String>));
+  await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Settings\u2026'));
   await tester.pumpAndSettle();
 }
+
+Future<void> _openMenu(WidgetTester tester) async {
+  await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
+  await tester.pumpAndSettle();
+}
+
+/// The ticks drawn while the menu is open.
+///
+/// The menu is built into its own route, and the trimming entries are the only
+/// thing on screen that draws a tick, so the count is unambiguous. (The menu's
+/// own widget tree is private, so it cannot be used to scope the search.)
+Finder _menuTicks() => find.byIcon(Icons.check);
 
 ColorScheme _colorScheme(WidgetTester tester) =>
     tester.widget<MaterialApp>(find.byType(MaterialApp)).theme!.colorScheme;
@@ -171,16 +185,208 @@ void main() {
     expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
+  testWidgets('every accent is labelled, not only named in a tooltip', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openSettings(tester);
+
+    for (final accent in AppAccent.values) {
+      expect(find.text(accent.label), findsOneWidget, reason: accent.name);
+    }
+  });
+
+  testWidgets('switching accent leaves exactly one accent ticked', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openSettings(tester);
+
+    await tester.tap(find.byTooltip(AppAccent.red.label));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    // The tick moved with the selection rather than being left behind.
+    expect(
+      find.descendant(
+        of: find.byTooltip(AppAccent.red.label),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byTooltip(AppAccent.pink.label),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('reset restores the defaults and persists them', (tester) async {
+    final store = InMemoryAppSettingsStore();
+    await _pumpApp(tester, store: store);
+    await _openSettings(tester);
+
+    await tester.tap(find.byTooltip(AppAccent.blue.label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reset to defaults'));
+    await tester.pumpAndSettle();
+
+    expect(await store.load(), const AppSettings());
+    expect(_themeMode(tester), ThemeMode.system);
+    expect(
+      _colorScheme(tester).primary,
+      buildAppTheme(
+        brightness: .light,
+        accent: AppAccent.pink,
+      ).colorScheme.primary,
+    );
+  });
+
+  testWidgets('the done button dismisses the settings sheet', (tester) async {
+    await _pumpApp(tester);
+    await _openSettings(tester);
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing);
+  });
+
+  testWidgets('the footer stays on screen when the body has to scroll', (
+    tester,
+  ) async {
+    // Short enough that the body cannot show the header, body and footer at
+    // once. The footer lives outside the scroll view, so it must not be the
+    // part that gets cut off.
+    tester.view.physicalSize = const Size(400, 320);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    // Driven through a bare app rather than `_pumpApp`: at this height the
+    // home page behind the sheet overflows on its own, which is a separate
+    // concern from the sheet's own layout.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(brightness: .light, accent: AppAccent.pink),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => showSettingsSheet(
+                  context,
+                  settings: const AppSettings(),
+                  onChanged: (_) {},
+                ),
+                child: const Text('open settings'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open settings'));
+    await tester.pumpAndSettle();
+
+    // The body genuinely does not fit, so the footer being visible can only be
+    // down to it sitting outside the scroller.
+    final scroller = tester.state<ScrollableState>(find.byType(Scrollable));
+    expect(scroller.position.maxScrollExtent, greaterThan(0));
+
+    expect(find.text('Done'), findsOneWidget);
+    expect(tester.getBottomLeft(find.text('Done')).dy, lessThanOrEqualTo(320));
+    expect(find.text('Reset to defaults'), findsOneWidget);
+    expect(
+      tester.getBottomLeft(find.text('Reset to defaults')).dy,
+      lessThanOrEqualTo(320),
+    );
+  });
+
+  testWidgets('the menu groups its entries and shows the open shortcut', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openMenu(tester);
+
+    // Three captions plus five actionable entries, split by two dividers. The
+    // entries are private subclasses, so match on the base type rather than by
+    // exact runtime type.
+    expect(
+      find.byWidgetPredicate((w) => w is PopupMenuItem<AppMenuAction>),
+      findsNWidgets(8),
+    );
+    expect(find.byType(PopupMenuDivider), findsNWidgets(2));
+    // Section captions, uppercased by the widget itself.
+    for (final caption in ['FILE', 'TRIMMING', 'APPLICATION']) {
+      expect(find.text(caption), findsOneWidget, reason: caption);
+    }
+    expect(find.text('Ctrl+O'), findsOneWidget);
+    // The icons that give each command a leading glyph. Presence only: the
+    // menu route renders its entries more than once, so a count proves nothing.
+    expect(find.byIcon(Icons.folder_open), findsWidgets);
+    expect(find.byIcon(Icons.tune), findsWidgets);
+    expect(find.byIcon(Icons.info_outline), findsWidgets);
+  });
+
+  testWidgets(
+    'the trimming entries render as checkboxes, unticked by default',
+    (tester) async {
+      final session = await _pumpApp(tester);
+      await _openMenu(tester);
+
+      expect(session.precise, isFalse);
+      expect(session.removeAudio, isFalse);
+      // A tick means "checked"; the labels are always present either way.
+      expect(_menuTicks(), findsNothing);
+    },
+  );
+
+  testWidgets('ticking a trimming entry flips the session flag', (
+    tester,
+  ) async {
+    final session = await _pumpApp(tester);
+
+    await _openMenu(tester);
+    await tester.tap(find.text('Precise (re-encode)'));
+    await tester.pumpAndSettle();
+    expect(session.precise, isTrue);
+
+    // The menu closes on selection, so reopen it to see the ticked box.
+    await _openMenu(tester);
+    expect(_menuTicks(), findsOneWidget);
+    await tester.tap(find.text('Remove audio'));
+    await tester.pumpAndSettle();
+    expect(session.removeAudio, isTrue);
+
+    await _openMenu(tester);
+    expect(_menuTicks(), findsNWidgets(2));
+
+    // Tapping again unticks.
+    await tester.tap(find.text('Precise (re-encode)'));
+    await tester.pumpAndSettle();
+    expect(session.precise, isFalse);
+    await _openMenu(tester);
+    expect(_menuTicks(), findsOneWidget);
+  });
+
   testWidgets('the about sheet opens and closes', (tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('About Video Trimmer'));
+    await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
 
     expect(find.byType(BottomSheet), findsOneWidget);
-    expect(find.text('version $appVersion ($appBuildNumber)'), findsOneWidget);
+    // The About sheet shows the version only; the build number is not part of
+    // the line, and `app_version_test.dart` pins that too.
+    expect(find.text('version $appVersion'), findsOneWidget);
     expect(find.text('GPL-3.0'), findsOneWidget);
 
     await tester.tap(find.text('Close'));

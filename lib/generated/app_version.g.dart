@@ -5,7 +5,7 @@
 
 /// Build name from the `version:` key in pubspec.yaml, before
 /// the `+`.
-const String appVersion = '1.0.3';
+const String appVersion = '1.0.4';
 
 /// Build number from the `+N` suffix of the `version:` key in
 /// pubspec.yaml.

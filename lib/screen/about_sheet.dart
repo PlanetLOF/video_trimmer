@@ -73,7 +73,10 @@ Future<void> showVideoTrimmerAboutSheet(BuildContext context) {
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton(
+                // Filled, to match the settings sheet's Done button: the two
+                // sheets are the same surface with different content, and they
+                // read as a pair only if the dismiss affordance looks the same.
+                child: FilledButton(
                   onPressed: () => Navigator.of(sheetContext).pop(),
                   child: const Text('Close'),
                 ),
