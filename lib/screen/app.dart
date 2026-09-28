@@ -2,14 +2,14 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import 'about_dialog.dart';
+import 'about_sheet.dart';
 import '../util/ffmpeg.dart';
 import 'open_dialog.dart';
 import '../util/platform_util.dart';
 import 'save_dialog.dart';
 import '../common/app_settings.dart';
 import '../common/shortcuts.dart';
-import 'settings_dialog.dart';
+import 'settings_sheet.dart';
 import 'start_end_row.dart';
 import '../common/theme.dart';
 import 'timeline.dart';
@@ -218,13 +218,13 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
               case 'removeAudio':
                 session.setRemoveAudio(!session.removeAudio);
               case 'settings':
-                showSettingsDialog(
+                showSettingsSheet(
                   context,
                   settings: widget.settings,
                   onChanged: widget.onSettingsChanged ?? (_) {},
                 );
               case 'about':
-                showVideoTrimmerAboutDialog(context);
+                showVideoTrimmerAboutSheet(context);
             }
           },
           itemBuilder: (context) => [

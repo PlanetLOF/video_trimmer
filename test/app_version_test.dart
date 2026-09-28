@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:video_trimmer/generated/app_version.g.dart';
-import 'package:video_trimmer/screen/about_dialog.dart';
+import 'package:video_trimmer/screen/about_sheet.dart';
 
 import '../tool/pubspec_version.dart';
 
@@ -44,12 +44,12 @@ void main() {
     expect(appBuildNumber, pubspec.buildNumber);
   });
 
-  testWidgets('about dialog shows the current version', (tester) async {
+  testWidgets('about sheet shows the current version', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(
           builder: (context) => TextButton(
-            onPressed: () => showVideoTrimmerAboutDialog(context),
+            onPressed: () => showVideoTrimmerAboutSheet(context),
             child: const Text('Open about'),
           ),
         ),
@@ -59,6 +59,6 @@ void main() {
     await tester.tap(find.text('Open about'));
     await tester.pumpAndSettle();
 
-    expect(find.text('version $appVersion'), findsOneWidget);
+    expect(find.text('version $appVersion ($appBuildNumber)'), findsOneWidget);
   });
 }

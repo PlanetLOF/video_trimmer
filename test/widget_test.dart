@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:video_trimmer/screen/app.dart';
 import 'package:video_trimmer/screen/start_end_row.dart';
+import 'package:video_trimmer/generated/app_version.g.dart';
 import 'package:video_trimmer/common/typography.dart';
 import 'package:video_trimmer/common/app_settings.dart';
 import 'package:video_trimmer/common/theme.dart';
@@ -53,13 +54,14 @@ void main() {
     expect(find.text('Trim'), findsNothing);
   });
 
-  testWidgets('settings dialog offers all accents and the three theme modes', (
+  testWidgets('settings sheet offers all accents and the three theme modes', (
     tester,
   ) async {
     await _pumpApp(tester);
     await _openSettings(tester);
 
     expect(find.text('Settings'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsOneWidget);
     for (final accent in AppAccent.values) {
       expect(find.byTooltip(accent.label), findsOneWidget, reason: accent.name);
     }
@@ -79,7 +81,7 @@ void main() {
     await tester.tap(find.byTooltip(AppAccent.blue.label));
     await tester.pumpAndSettle();
 
-    // The app underneath (not just the dialog) adopted the new accent.
+    // The app underneath (not just the sheet) adopted the new accent.
     final after = _colorScheme(tester).primary;
     expect(after, isNot(before));
     expect(
@@ -108,11 +110,43 @@ void main() {
       const AppSettings(accent: AppAccent.teal, themeMode: ThemeMode.dark),
     );
     expect(_themeMode(tester), ThemeMode.dark);
-    // The dialog stays open and shows the new selection.
+    // The sheet stays open and shows the new selection.
     expect(find.text('Settings'), findsOneWidget);
   });
 
-  testWidgets('the dialog honours the persisted settings on open', (
+  testWidgets('the settings sheet itself restyles when the accent changes', (
+    tester,
+  ) async {
+    await _pumpApp(tester);
+    await _openSettings(tester);
+
+    Color primaryInsideSheet() =>
+        Theme.of(tester.element(find.byType(SegmentedButton<ThemeMode>)))
+            .colorScheme
+            .primary;
+
+    final before = primaryInsideSheet();
+
+    await tester.tap(find.byTooltip(AppAccent.purple.label));
+    await tester.pumpAndSettle();
+
+    // `showModalBottomSheet` captures and freezes the InheritedThemes between
+    // the calling context and the target navigator. `MaterialApp` puts its
+    // `Theme` above the navigator, so the `Theme` escapes the capture and the
+    // sheet keeps restyling. This pins that: it would fail if a `Navigator`
+    // were ever placed above the `Theme`, with the app behind the sheet still
+    // looking perfectly correct.
+    expect(primaryInsideSheet(), isNot(before));
+    expect(
+      primaryInsideSheet(),
+      buildAppTheme(
+        brightness: .light,
+        accent: AppAccent.purple,
+      ).colorScheme.primary,
+    );
+  });
+
+  testWidgets('the sheet honours the persisted settings on open', (
     tester,
   ) async {
     await _pumpApp(
@@ -135,6 +169,24 @@ void main() {
     await _openSettings(tester);
     // A single check mark marks the active accent.
     expect(find.byIcon(Icons.check), findsOneWidget);
+  });
+
+  testWidgets('the about sheet opens and closes', (tester) async {
+    await _pumpApp(tester);
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About Video Trimmer'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.text('version $appVersion ($appBuildNumber)'), findsOneWidget);
+    expect(find.text('GPL-3.0'), findsOneWidget);
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing);
   });
 
   testWidgets('trim button is disabled until a valid selection exists', (
@@ -193,6 +245,7 @@ void main() {
       expect(field.style?.fontFamily, kMonoFontFamily);
     }
   });
+
   test('AppSettings.copyWith merges only the given fields', () {
     const base = AppSettings(accent: AppAccent.purple);
     expect(base.copyWith(themeMode: ThemeMode.dark).accent, AppAccent.purple);

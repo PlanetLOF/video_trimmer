@@ -112,6 +112,17 @@ ThemeData buildAppTheme({
         color: colorScheme.onSurface,
       ),
     ),
+    // Mirrors `dialogTheme` so sheets and dialogs read as the same surface.
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colorScheme.surfaceContainerLow,
+      modalBackgroundColor: colorScheme.surfaceContainerLow,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: .only(topLeft: .circular(16), topRight: .circular(16)),
+      ),
+      showDragHandle: true,
+      dragHandleColor: colorScheme.onSurfaceVariant,
+    ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: colorScheme.primary,
       contentTextStyle: textTheme.bodyMedium?.copyWith(
