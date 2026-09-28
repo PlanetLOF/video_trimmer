@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../common/typography.dart';
 import '../util/ffmpeg.dart';
 import '../util/platform_util.dart';
 
@@ -123,10 +124,7 @@ void _handleOutcome(
                     child: SingleChildScrollView(
                       child: SelectableText(
                         outcome.stderr,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                        ),
+                        style: monoStyle(fontSize: 12),
                       ),
                     ),
                   ),
@@ -261,10 +259,8 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
                 _fileName(widget.outputPath ?? ''),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
             ],
           ),

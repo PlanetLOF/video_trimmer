@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../util/timecode.dart';
+import '../common/typography.dart';
 import '../common/video_session.dart';
 
 const _tolerance = 5.0;
@@ -291,11 +292,10 @@ class _TimelinePainter extends CustomPainter {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(
-          color: colorScheme.onSurface,
+        style: monoStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          fontFamily: 'monospace',
+          color: colorScheme.onSurface,
         ),
       ),
       textDirection: TextDirection.ltr,

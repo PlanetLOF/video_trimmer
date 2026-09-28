@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../common/typography.dart';
 import '../common/video_session.dart';
 
 /// Bottom toolbar combining playback controls (step back / play-pause / step
@@ -117,9 +118,10 @@ class _StartEndRowState extends State<StartEndRow> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final mono = Theme.of(context).textTheme.bodyMedium
-        ?.copyWith(fontFamily: 'monospace');
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final mono = monoStyle(fontSize: 13.5, color: textTheme.bodyMedium?.color);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -149,11 +151,11 @@ class _StartEndRowState extends State<StartEndRow> {
             const SizedBox(width: 10),
             Text(
               _formatPosition(_session.position),
-              style: mono?.copyWith(fontWeight: FontWeight.w600),
+              style: mono.copyWith(fontWeight: FontWeight.w600),
             ),
             Text(
               ' / ${_formatPosition(_session.duration)}',
-              style: mono?.copyWith(color: colorScheme.outline),
+              style: mono.copyWith(color: colorScheme.outline),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -167,7 +169,10 @@ class _StartEndRowState extends State<StartEndRow> {
                   onSetFromPlayhead: _session.setStartAsPosition,
                   setTooltip: 'Set start to current position (I)',
                 ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                style: monoStyle(
+                  fontSize: 13.5,
+                  color: textTheme.bodyMedium?.color,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -182,7 +187,10 @@ class _StartEndRowState extends State<StartEndRow> {
                   onSetFromPlayhead: _session.setEndAsPosition,
                   setTooltip: 'Set end to current position (O)',
                 ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                style: monoStyle(
+                  fontSize: 13.5,
+                  color: textTheme.bodyMedium?.color,
+                ),
               ),
             ),
             const SizedBox(width: 14),

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:video_trimmer/screen/app.dart';
 import 'package:video_trimmer/screen/start_end_row.dart';
+import 'package:video_trimmer/common/typography.dart';
 import 'package:video_trimmer/common/video_session.dart';
 
 Widget _wrap(Widget child) {
@@ -74,5 +75,34 @@ void main() {
       find.widgetWithText(FilledButton, 'Trim'),
     );
     expect(trimButton.onPressed, isNotNull);
+  });
+
+  testWidgets('text resolves to the bundled UI and mono families', (
+    tester,
+  ) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(VideoTrimmerApp(session: session));
+    await tester.pumpAndSettle();
+
+    final theme = Theme.of(tester.element(find.text('Video Trimmer')));
+    expect(theme.textTheme.bodyMedium?.fontFamily, kUiFontFamily);
+    expect(theme.textTheme.bodyMedium?.fontSize, 13.5);
+    expect(theme.textTheme.titleLarge?.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets('time entries use the bundled mono family', (tester) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(
+      _wrap(StartEndRow(session: session, onRequestTrim: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    for (final field in tester.widgetList<TextField>(find.byType(TextField))) {
+      expect(field.style?.fontFamily, kMonoFontFamily);
+    }
   });
 }

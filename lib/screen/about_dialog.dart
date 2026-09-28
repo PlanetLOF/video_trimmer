@@ -44,10 +44,8 @@ Future<void> showVideoTrimmerAboutDialog(BuildContext context) {
                   const SizedBox(height: 2),
                   Text(
                     'GPL-3.0',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: Theme.of(dialogContext).textTheme.bodySmall
+                        ?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),

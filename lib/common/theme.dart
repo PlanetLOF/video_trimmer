@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import 'typography.dart';
+
 const Color kSeedColor = Colors.pink;
 
 ThemeData buildAppTheme(Brightness brightness) {
@@ -8,11 +10,16 @@ ThemeData buildAppTheme(Brightness brightness) {
     brightness: brightness,
     dynamicSchemeVariant: .vibrant,
   );
-  final base = ThemeData(brightness: brightness);
-  final textTheme = base.textTheme;
+  // The seed scheme is passed down so the colors the text theme picks up come
+  // from the same scheme as the rest of the app.
+  final base = ThemeData(brightness: brightness, colorScheme: colorScheme);
+  final textTheme = buildAppTextTheme(base.textTheme);
 
   return ThemeData(
     colorScheme: colorScheme,
+    fontFamily: kUiFontFamily,
+    fontFamilyFallback: kFontFamilyFallback,
+    textTheme: textTheme,
     visualDensity: VisualDensity.compact,
     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     appBarTheme: AppBarTheme(
@@ -23,7 +30,6 @@ ThemeData buildAppTheme(Brightness brightness) {
       centerTitle: false,
       titleTextStyle: textTheme.titleLarge?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
       ),
       iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
       actionsIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
@@ -72,7 +78,9 @@ ThemeData buildAppTheme(Brightness brightness) {
         borderRadius: .circular(10),
         borderSide: BorderSide(color: colorScheme.error, width: 1.5),
       ),
-      labelStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+      labelStyle: textTheme.bodySmall?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+      ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: colorScheme.surfaceContainerLow,
@@ -80,7 +88,6 @@ ThemeData buildAppTheme(Brightness brightness) {
       shape: RoundedRectangleBorder(borderRadius: .circular(16)),
       titleTextStyle: textTheme.titleLarge?.copyWith(
         color: colorScheme.onSurface,
-        fontWeight: FontWeight.w600,
       ),
     ),
     snackBarTheme: SnackBarThemeData(
@@ -95,7 +102,9 @@ ThemeData buildAppTheme(Brightness brightness) {
         color: colorScheme.inverseSurface,
         borderRadius: .circular(6),
       ),
-      textStyle: TextStyle(color: colorScheme.onInverseSurface, fontSize: 12),
+      textStyle: textTheme.bodySmall?.copyWith(
+        color: colorScheme.onInverseSurface,
+      ),
       waitDuration: const Duration(milliseconds: 400),
     ),
     popupMenuTheme: PopupMenuThemeData(
