@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-const _appVersion = '1.0.0';
+import 'package:video_trimmer/generated/app_version.g.dart';
 
 Future<void> showVideoTrimmerAboutDialog(BuildContext context) {
   final colorScheme = Theme.of(context).colorScheme;
@@ -38,7 +38,7 @@ Future<void> showVideoTrimmerAboutDialog(BuildContext context) {
                     style: Theme.of(dialogContext).textTheme.titleMedium,
                   ),
                   Text(
-                    'version $_appVersion',
+                    'version $appVersion',
                     style: Theme.of(dialogContext).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 2),
