@@ -3,23 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../common/app_settings.dart';
 import '../common/theme.dart';
 
-/// Opens the "Settings" bottom sheet.
-///
-/// Every change is reported through [onChanged] immediately, so the surrounding
-/// app restyles live. That relies on two things, both easy to break:
-///
-///  * The sheet keeps its own copy of the selection. A pushed route is not
-///    rebuilt when the enclosing `MaterialApp` rebuilds, so reading a [settings]
-///    field during build would freeze on the value it had when the sheet opened.
-///  * [showModalBottomSheet] captures the [InheritedTheme]s between the calling
-///    context and the target navigator, and captured themes are frozen — the
-///    sheet would stop restyling. [MaterialApp] installs its `Theme` *above* the
-///    navigator, so the `Theme` itself never falls inside the captured range and
-///    the sheet stays a descendant of the live one. A [Navigator] placed above
-///    the `Theme` would break this.
-///
-/// The header and footer sit outside the scroll view so they stay put when the
-/// window is too short for the whole body.
 Future<void> showSettingsSheet(
   BuildContext context, {
   required AppSettings settings,
@@ -100,29 +83,11 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                     description:
                         'Follow the desktop setting, or lock the app to one '
                         'of the two.',
-                    child: SegmentedButton<ThemeMode>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          icon: Icon(Icons.light_mode_outlined),
-                          label: Text('Light'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          icon: Icon(Icons.dark_mode_outlined),
-                          label: Text('Dark'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          icon: Icon(Icons.brightness_auto_outlined),
-                          label: Text('System'),
-                        ),
-                      ],
-                      selected: {_settings.themeMode},
-                      onSelectionChanged: (selection) => _update(
-                        _settings.copyWith(themeMode: selection.first),
-                      ),
+                    child: _ThemeGrid(
+                      accent: _settings.accent,
+                      selected: _settings.themeMode,
+                      onSelected: (themeMode) =>
+                          _update(_settings.copyWith(themeMode: themeMode)),
                     ),
                   ),
                 ],
@@ -290,7 +255,7 @@ class _AccentChip extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
             decoration: BoxDecoration(
               color: selected
-                  ? colorScheme.secondaryContainer
+                  ? colorScheme.primaryContainer
                   : Colors.transparent,
               borderRadius: radius,
               border: Border.all(
@@ -309,6 +274,10 @@ class _AccentChip extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: accent.seed,
                     shape: BoxShape.circle,
+                    // Primary outline on the active dot only.
+                    border: selected
+                        ? Border.all(color: colorScheme.primary, width: 1.5)
+                        : null,
                   ),
                   // The only tick on screen marks the active accent.
                   child: selected
@@ -324,6 +293,171 @@ class _AccentChip extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(accent.label, style: textTheme.labelLarge),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeGrid extends StatelessWidget {
+  const _ThemeGrid({
+    required this.accent,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  static const _spacing = 8.0;
+
+  final AppAccent accent;
+  final ThemeMode selected;
+  final ValueChanged<ThemeMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final lightScheme = ColorScheme.fromSeed(
+      seedColor: accent.seed,
+      brightness: Brightness.light,
+      dynamicSchemeVariant: .vibrant,
+    );
+    final darkScheme = ColorScheme.fromSeed(
+      seedColor: accent.seed,
+      brightness: Brightness.dark,
+      dynamicSchemeVariant: .vibrant,
+    );
+
+    return Wrap(
+      spacing: _spacing,
+      runSpacing: _spacing,
+      children: [
+        _ThemeCard(
+          mode: ThemeMode.light,
+          label: 'Light',
+          selected: selected == ThemeMode.light,
+          onSelected: onSelected,
+          preview: Container(
+            color: lightScheme.primaryContainer,
+            child: Center(
+              child: Icon(
+                Icons.light_mode_outlined,
+                color: lightScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ),
+        _ThemeCard(
+          mode: ThemeMode.dark,
+          label: 'Dark',
+          selected: selected == ThemeMode.dark,
+          onSelected: onSelected,
+          preview: Container(
+            color: darkScheme.primaryContainer,
+            child: Center(
+              child: Icon(
+                Icons.dark_mode_outlined,
+                color: darkScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ),
+        _ThemeCard(
+          mode: ThemeMode.system,
+          label: 'System',
+          selected: selected == ThemeMode.system,
+          onSelected: onSelected,
+          preview: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Container(
+                  color: lightScheme.primaryContainer,
+                  child: Center(
+                    child: Icon(
+                      Icons.light_mode_outlined,
+                      color: lightScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  color: darkScheme.primaryContainer,
+                  child: Center(
+                    child: Icon(
+                      Icons.dark_mode_outlined,
+                      color: darkScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeCard extends StatelessWidget {
+  const _ThemeCard({
+    required this.mode,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+    required this.preview,
+  });
+
+  static const _cardWidth = 104.0;
+  static const _previewHeight = 52.0;
+
+  final ThemeMode mode;
+  final String label;
+  final bool selected;
+  final ValueChanged<ThemeMode> onSelected;
+  final Widget preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    const radius = BorderRadius.all(Radius.circular(12));
+
+    return Tooltip(
+      message: label,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: () => onSelected(mode),
+          borderRadius: radius,
+          child: Container(
+            width: _cardWidth,
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: Border.all(
+                color: selected
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(11)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: _previewHeight, child: preview),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      label,
+                      style: textTheme.labelLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

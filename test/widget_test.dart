@@ -147,11 +147,9 @@ void main() {
     await _pumpApp(tester);
     await _openSettings(tester);
 
-    // The sheet's own `SegmentedButton` sees the live theme.
+    // A theme card inside the sheet sees the live theme.
     Color primaryInsideSheet() =>
-        Theme.of(tester.element(find.byType(SegmentedButton<ThemeMode>)))
-            .colorScheme
-            .primary;
+        Theme.of(tester.element(find.text('System'))).colorScheme.primary;
 
     final before = primaryInsideSheet();
 
