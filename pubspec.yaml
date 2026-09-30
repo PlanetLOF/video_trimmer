@@ -2,7 +2,7 @@ name: video_trimmer
 description: "Video trimmer inspiration from gnome video trimmer with flutter."
 publish_to: 'none'
 
-version: 1.0.5+1
+version: 1.0.6+1
 
 environment:
   sdk: ^3.13.3
@@ -19,7 +19,7 @@ dependencies:
   path: ^1.9.1
   material_ui: ^1.4.0
   shared_preferences: ^2.5.5
-  window_manager: ^0.4.2
+  window_manager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

@@ -93,11 +93,13 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   void initState() {
     super.initState();
     _session = widget.session ?? VideoSession();
-    _windowListener = _WindowListener(onFullscreenChange: (isFullscreen) {
-      if (mounted) {
-        setState(() => _isFullscreen = isFullscreen);
-      }
-    });
+    _windowListener = _WindowListener(
+      onFullscreenChange: (isFullscreen) {
+        if (mounted) {
+          setState(() => _isFullscreen = isFullscreen);
+        }
+      },
+    );
     windowManager.addListener(_windowListener);
     _initFullscreenState();
   }
@@ -390,7 +392,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showAppMenu(context),
+          onTap: _showAppMenu,
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.all(8),
@@ -405,7 +407,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
     );
   }
 
-  void _showAppMenu(BuildContext context) {
+  void _showAppMenu() {
     final RenderBox button = context.findRenderObject()! as RenderBox;
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
     final Size buttonSize = button.size;
@@ -477,11 +479,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            Icons.fullscreen,
-            color: colorScheme.onSurface,
-            size: 24,
-          ),
+          child: Icon(Icons.fullscreen, color: colorScheme.onSurface, size: 24),
         ),
       ),
     );

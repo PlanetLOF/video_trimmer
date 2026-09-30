@@ -33,15 +33,21 @@ Future<VideoSession> _pumpApp(
   return session;
 }
 
+/// The overflow menu button in the video overlay.
+///
+/// The app draws the menu by hand — an `InkWell` over `showMenu` — rather than
+/// with a `PopupMenuButton`, so the icon is the only handle on it that does not
+/// depend on a private widget type.
+Finder _appMenuButton() => find.byIcon(Icons.more_horiz);
+
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
-  await tester.pumpAndSettle();
+  await _openMenu(tester);
   await tester.tap(find.text('Settings\u2026'));
   await tester.pumpAndSettle();
 }
 
 Future<void> _openMenu(WidgetTester tester) async {
-  await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
+  await tester.tap(_appMenuButton());
   await tester.pumpAndSettle();
 }
 
@@ -62,10 +68,16 @@ void main() {
   testWidgets('app shows the open prompt when nothing is open', (tester) async {
     await _pumpApp(tester);
 
-    expect(find.text('Video Trimmer'), findsOneWidget);
+    expect(find.text('Drop a video file here'), findsOneWidget);
     expect(find.text('Open'), findsWidgets);
     expect(find.byIcon(Icons.movie_outlined), findsOneWidget);
-    expect(find.text('Trim'), findsNothing);
+    // The timeline and the time fields stay on screen with nothing loaded, but
+    // there is no selection to trim yet, so the button is there and disabled
+    // rather than absent.
+    final trim = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Trim'),
+    );
+    expect(trim.onPressed, isNull);
   });
 
   testWidgets('settings sheet offers all accents and the three theme modes', (
@@ -79,6 +91,7 @@ void main() {
     for (final accent in AppAccent.values) {
       expect(find.byTooltip(accent.label), findsOneWidget, reason: accent.name);
     }
+    // One segmented button per theme mode.
     for (final mode in ['Light', 'Dark', 'System']) {
       expect(find.text(mode), findsOneWidget, reason: mode);
     }
@@ -134,6 +147,7 @@ void main() {
     await _pumpApp(tester);
     await _openSettings(tester);
 
+    // The sheet's own `SegmentedButton` sees the live theme.
     Color primaryInsideSheet() =>
         Theme.of(tester.element(find.byType(SegmentedButton<ThemeMode>)))
             .colorScheme
@@ -378,8 +392,7 @@ void main() {
   testWidgets('the about sheet opens and closes', (tester) async {
     await _pumpApp(tester);
 
-    await tester.tap(find.byType(PopupMenuButton<AppMenuAction>));
-    await tester.pumpAndSettle();
+    await _openMenu(tester);
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
 
@@ -432,7 +445,7 @@ void main() {
     await tester.pumpWidget(VideoTrimmerApp(session: session));
     await tester.pumpAndSettle();
 
-    final theme = Theme.of(tester.element(find.text('Video Trimmer')));
+    final theme = Theme.of(tester.element(find.text('Drop a video file here')));
     expect(theme.textTheme.bodyMedium?.fontFamily, kUiFontFamily);
     expect(theme.textTheme.bodyMedium?.fontSize, 13.5);
     expect(theme.textTheme.titleLarge?.fontWeight, FontWeight.w600);
@@ -450,6 +463,97 @@ void main() {
     for (final field in tester.widgetList<TextField>(find.byType(TextField))) {
       expect(field.style?.fontFamily, kMonoFontFamily);
     }
+  });
+
+  testWidgets('an empty time entry floats its label and hints the format', (
+    tester,
+  ) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(
+      _wrap(StartEndRow(session: session, onRequestTrim: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    // No point has been added yet, so both entries are blank.
+    expect(session.startText, isNull);
+    expect(session.endText, isNull);
+
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList();
+    expect(fields, hasLength(2));
+    for (final field in fields) {
+      // Floating the label unconditionally is what keeps a blank entry the same
+      // height as a filled one.
+      expect(
+        field.decoration?.floatingLabelBehavior,
+        FloatingLabelBehavior.always,
+      );
+      // The hint stands in for the value, so the box is not just an empty
+      // rounded rectangle.
+      expect(field.decoration?.hintText, isNotNull);
+      expect(field.decoration?.errorText, isNull);
+    }
+    expect(find.text('0:00.0'), findsNWidgets(2));
+  });
+
+  testWidgets('a time entry keeps its height as points are added and cleared', (
+    tester,
+  ) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(
+      _wrap(StartEndRow(session: session, onRequestTrim: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    double entryHeight() => tester.getSize(find.byType(TextField).first).height;
+
+    final empty = entryHeight();
+
+    session.setStartText('0:12.5');
+    await tester.pumpAndSettle();
+    expect(entryHeight(), empty);
+
+    session.setStartText('');
+    await tester.pumpAndSettle();
+    expect(entryHeight(), empty);
+  });
+
+  testWidgets('an invalid time entry is outlined without resizing the box', (
+    tester,
+  ) async {
+    final session = VideoSession(initOnConstruct: false);
+    addTearDown(session.dispose);
+
+    await tester.pumpWidget(
+      _wrap(StartEndRow(session: session, onRequestTrim: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    final valid = tester.getSize(find.byType(TextField).first).height;
+
+    session.setStartText('not a time');
+    await tester.pumpAndSettle();
+    expect(session.startError, isTrue);
+
+    // Outlined, not grown: an `errorText` of any kind would reserve the error
+    // line and push this entry and its neighbour out of alignment.
+    expect(tester.getSize(find.byType(TextField).first).height, valid);
+    expect(tester.getSize(find.byType(TextField).at(1)).height, valid);
+    final colorScheme = Theme.of(tester.element(find.byType(StartEndRow)))
+        .colorScheme;
+    final startField = tester.widget<TextField>(find.byType(TextField).first);
+    expect(startField.decoration?.errorText, isNull);
+    final border = startField.decoration?.enabledBorder! as OutlineInputBorder;
+    expect(border.borderSide.color, colorScheme.secondary);
+    // The ring has to be recoloured too, since `focusedErrorBorder` is only
+    // consulted while `errorText` is non-null.
+    final focused = startField.decoration!.focusedBorder! as OutlineInputBorder;
+    expect(focused.borderSide.color, colorScheme.secondary);
   });
 
   test('AppSettings.copyWith merges only the given fields', () {

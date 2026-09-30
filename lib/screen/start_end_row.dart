@@ -102,8 +102,19 @@ class _StartEndRowState extends State<StartEndRow> {
     required VoidCallback onSetFromPlayhead,
     required String setTooltip,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    OutlineInputBorder border(BorderSide side) =>
+        OutlineInputBorder(borderRadius: .circular(10), borderSide: side);
+
     return InputDecoration(
       labelText: label,
+      floatingLabelBehavior: .always,
+      hintText: '0:00.0',
+      hintStyle: monoStyle(
+        fontSize: 13.5,
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+      ),
       prefixIcon: Icon(icon, size: 18),
       prefixIconConstraints: const BoxConstraints(minWidth: 32),
       suffixIcon: IconButton(
@@ -112,7 +123,41 @@ class _StartEndRowState extends State<StartEndRow> {
         onPressed: onSetFromPlayhead,
       ),
       suffixIconConstraints: const BoxConstraints(minWidth: 32),
-      errorText: hasError ? '' : null,
+      enabledBorder: hasError
+          ? border(BorderSide(color: colorScheme.secondary, width: 1.5))
+          : border(BorderSide.none),
+      focusedBorder: border(
+        BorderSide(
+          color: hasError ? colorScheme.secondary : colorScheme.primary,
+          width: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _timeField({
+    required TextEditingController controller,
+    required ValueChanged<String> onChanged,
+    required String label,
+    required IconData icon,
+    required bool hasError,
+    required VoidCallback onSetFromPlayhead,
+    required String setTooltip,
+  }) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: _decoration(
+        label: label,
+        icon: icon,
+        hasError: hasError,
+        onSetFromPlayhead: onSetFromPlayhead,
+        setTooltip: setTooltip,
+      ),
+      style: monoStyle(
+        fontSize: 13.5,
+        color: Theme.of(context).textTheme.bodyMedium?.color,
+      ),
     );
   }
 
@@ -159,38 +204,26 @@ class _StartEndRowState extends State<StartEndRow> {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: TextField(
+              child: _timeField(
                 controller: _startCtrl,
                 onChanged: _onStartChanged,
-                decoration: _decoration(
-                  label: 'Start',
-                  icon: Icons.flag_outlined,
-                  hasError: _session.startError,
-                  onSetFromPlayhead: _session.setStartAsPosition,
-                  setTooltip: 'Set start to current position (I)',
-                ),
-                style: monoStyle(
-                  fontSize: 13.5,
-                  color: textTheme.bodyMedium?.color,
-                ),
+                label: 'Start',
+                icon: Icons.flag_outlined,
+                hasError: _session.startError,
+                onSetFromPlayhead: _session.setStartAsPosition,
+                setTooltip: 'Set start to current position (I)',
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: TextField(
+              child: _timeField(
                 controller: _endCtrl,
                 onChanged: _onEndChanged,
-                decoration: _decoration(
-                  label: 'End',
-                  icon: Icons.flag_rounded,
-                  hasError: _session.endError,
-                  onSetFromPlayhead: _session.setEndAsPosition,
-                  setTooltip: 'Set end to current position (O)',
-                ),
-                style: monoStyle(
-                  fontSize: 13.5,
-                  color: textTheme.bodyMedium?.color,
-                ),
+                label: 'End',
+                icon: Icons.flag_rounded,
+                hasError: _session.endError,
+                onSetFromPlayhead: _session.setEndAsPosition,
+                setTooltip: 'Set end to current position (O)',
               ),
             ),
             const SizedBox(width: 14),

@@ -59,7 +59,7 @@ void _handleOutcome(
     case 0:
       messenger.showSnackBar(
         SnackBar(
-          duration: const Duration(seconds: 60),
+          duration: const Duration(seconds: 30),
           persist: false,
           content: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
