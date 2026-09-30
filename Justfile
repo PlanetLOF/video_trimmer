@@ -1,14 +1,10 @@
 # Video Trimmer task runner. Run `just` with no arguments to list recipes.
 set shell := ["bash", "-euo", "pipefail", "-c"]
-
-# Pass recipe parameters through as real shell arguments instead of just's
-# textual `{{}}` interpolation, so a stray quote or semicolon in an argument
-# is inert rather than executed.
 set positional-arguments
 
-# Default platform for `run` and `build`, used when the first argument is a
-# flag rather than a platform. Override per call: `just device=windows build`.
-device := "linux"
+# Default platform for `run` and `build`, derived from the current OS.
+# Override per call: `just device=windows build`
+device := os()
 
 # List the available recipes.
 [doc('List the available recipes')]
@@ -44,37 +40,52 @@ fmt-check:
 [group('check')]
 check: analyze fmt-check test
 
-# Run the app. The first argument is the platform; anything after it passes
-# through to `flutter run`.
-#
-# The trailing "$@" must stay "$@" and not become "$*": with no positional
-# parameters "$*" expands to a single empty word, so `just run` would pass an
-# empty device name, and an argument containing a space would arrive joined
-# to its neighbours. No test covers this, so it is easy to undo by accident.
+# Run the app. First arg = platform (default: current OS), rest passed to `flutter run`.
 [doc('Run the app on a platform')]
 [group('dev')]
-run *args:
-    @platform="{{ device }}" \
-    && if [[ -n "${1:-}" && "$1" != -* ]]; then platform="$1"; shift; fi \
-    && flutter run -d "$platform" "$@"
+run platform=os() *args:
+    @flutter run -d "{{ platform }}" {{ args }}
 
-# Build a bundle, regenerating the generated sources first so a bundle is
-# never built from a stale app_version.g.dart. The first argument is the
-# platform; anything after it passes through to `flutter build`, which
-# defaults to release.
-#
-# The trailing "$@" must stay "$@" and not become "$*"; see the note on
-# `run` above for why.
+# Build the app, regenerating generated sources first.
+# First arg = platform (default: current OS), rest passed to `flutter build`.
 [doc('Build the app, regenerating generated sources first')]
 [group('build')]
-build *args:
-    @dart run tool/generate_version.dart \
-    && platform="{{ device }}" \
-    && if [[ -n "${1:-}" && "$1" != -* ]]; then platform="$1"; shift; fi \
-    && flutter build "$platform" "$@"
+build platform=os() *args:
+    @dart run tool/generate_version.dart
+    @flutter build "{{ platform }}" {{ args }}
 
-# Delete build output and the ephemeral plugin directories.
+# Get Flutter pub dependencies.
+[doc('Get Flutter Pub')]
+[group('build')]
+get:
+    @flutter pub get
+
+# Upgrade Flutter pub dependencies.
+[doc('Upgrade Flutter Pub')]
+[group('build')]
+up:
+    @flutter pub upgrade
+
+# Delete build output and ephemeral plugin directories.
 [doc('Delete build output')]
 [group('build')]
 clean:
     @flutter clean
+
+# Verify Flutter environment.
+[doc('Run flutter doctor')]
+[group('check')]
+doctor:
+    @flutter doctor -v
+
+# Ensure Flutter is installed.
+[doc('Ensure Flutter is installed')]
+[group('build')]
+install:
+    @command -v flutter >/dev/null || { echo "Flutter not found. Install via https://flutter.dev"; exit 1; }
+
+# Show version info.
+[doc('Show Flutter and Dart versions')]
+version:
+    @flutter --version
+    @dart --version

@@ -1,6 +1,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'about_sheet.dart';
 import '../util/ffmpeg.dart';
@@ -83,6 +84,8 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   late final Ffmpeg _ffmpeg = Ffmpeg();
 
   bool _dragOver = false;
+  bool _isFullscreen = false;
+  late final _WindowListener _windowListener;
 
   VideoSession get session => _session;
 
@@ -90,10 +93,23 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   void initState() {
     super.initState();
     _session = widget.session ?? VideoSession();
+    _windowListener = _WindowListener(onFullscreenChange: (isFullscreen) {
+      if (mounted) {
+        setState(() => _isFullscreen = isFullscreen);
+      }
+    });
+    windowManager.addListener(_windowListener);
+    _initFullscreenState();
+  }
+
+  Future<void> _initFullscreenState() async {
+    _isFullscreen = await windowManager.isFullScreen();
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    windowManager.removeListener(_windowListener);
     if (widget.session == null) {
       _session.dispose();
     }
@@ -178,117 +194,14 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
           listenable: session,
           builder: (context, child) {
             return Scaffold(
-              appBar: _buildAppBar(context),
               body: Stack(
                 children: [
-                  session.isOpen
-                      ? _buildMainPage(context)
-                      : _buildEmptyPage(context),
+                  _buildMainPage(context),
                   if (_dragOver) _buildDropOverlay(context),
                 ],
               ),
             );
           },
-        ),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Video Trimmer'),
-          if (session.isOpen)
-            Text(
-              session.displayName ?? '',
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-        ],
-      ),
-      actions: [
-        PopupMenuButton<AppMenuAction>(
-          onSelected: (action) {
-            switch (action) {
-              case AppMenuAction.open:
-                _openVideo(null);
-              case AppMenuAction.precise:
-                session.setPrecise(!session.precise);
-              case AppMenuAction.removeAudio:
-                session.setRemoveAudio(!session.removeAudio);
-              case AppMenuAction.settings:
-                showSettingsSheet(
-                  context,
-                  settings: widget.settings,
-                  onChanged: widget.onSettingsChanged ?? (_) {},
-                );
-              case AppMenuAction.about:
-                showVideoTrimmerAboutSheet(context);
-            }
-          },
-          itemBuilder: (context) => buildAppMenuEntries(session),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyPage(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
-            borderRadius: .circular(20),
-            border: .all(color: colorScheme.outlineVariant),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.movie_outlined,
-                  size: 48,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text('Drop a video file here', style: textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(
-                'or click Open to browse your files.\n'
-                'Trimming works without re-encoding.',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.outline,
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => _openVideo(null),
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Open'),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Tip: you can also drag & drop a video onto this window.',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outline,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -334,9 +247,11 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
     return Column(
       children: [
         Expanded(child: _buildVideoArea(context)),
-        Timeline(session: session),
-        const Divider(height: 1),
-        StartEndRow(session: session, onRequestTrim: _verifyAndTrim),
+        if (!_isFullscreen) ...[
+          Timeline(session: session),
+          const Divider(height: 1),
+          StartEndRow(session: session, onRequestTrim: _verifyAndTrim),
+        ],
       ],
     );
   }
@@ -344,16 +259,18 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   Widget _buildVideoArea(BuildContext context) {
     final controller = session.controller;
     final colorScheme = Theme.of(context).colorScheme;
-    final Widget child;
+    final Widget videoChild;
     if (session.hasError) {
-      child = _MessageView(
+      videoChild = _MessageView(
         icon: Icons.error_outline,
         label: 'Video could not be played.',
       );
+    } else if (!session.isOpen) {
+      videoChild = _buildWelcomeContent(context);
     } else if (controller == null || session.loading) {
-      child = const Center(child: CircularProgressIndicator());
+      videoChild = const Center(child: CircularProgressIndicator());
     } else if (!session.hasVideo) {
-      child = _MessageView(
+      videoChild = _MessageView(
         icon: Icons.movie_outlined,
         label: 'This file has no video stream.',
       );
@@ -365,8 +282,9 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
       // wrap this subtree in `MaterialUiCompatibilityBridge` from `package:material_ui`
       // so the legacy widgets resolve the app theme. The bridge is deprecated as of
       // material_ui 1.4.0 and will be removed in a future release.
-      child = Video(controller: controller, controls: NoVideoControls);
+      videoChild = Video(controller: controller, controls: NoVideoControls);
     }
+
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Container(
@@ -377,12 +295,217 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
         child: ClipRRect(
           borderRadius: .circular(9),
           child: ColoredBox(
-            color: Colors.black,
-            child: SizedBox.expand(child: child),
+            color: session.isOpen
+                ? Colors.black
+                : colorScheme.surfaceContainerLow,
+            child: Stack(
+              children: [
+                // Video playback or welcome content
+                SizedBox.expand(child: videoChild),
+                // Top-right overlay menu (always show)
+                Positioned(top: 8, right: 8, child: _buildOverlayMenu(context)),
+                // Bottom-left video title (only when video loaded)
+                if (session.isOpen && session.displayName != null)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: _buildVideoTitle(context),
+                  ),
+                // Bottom-right fullscreen button (only when video loaded)
+                if (session.isOpen)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: _buildFullscreenButton(context),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildWelcomeContent(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.movie_outlined,
+                  size: 48,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text('Drop a video file here', style: textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'or click Open to browse your files. Trimming works without re-encoding.',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => _openVideo(null),
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Open'),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Tip: you can also drag & drop a video onto this window.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverlayMenu(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showAppMenu(context),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              Icons.more_horiz,
+              color: colorScheme.onSurface,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAppMenu(BuildContext context) {
+    final RenderBox button = context.findRenderObject()! as RenderBox;
+    final Offset buttonPosition = button.localToGlobal(Offset.zero);
+    final Size buttonSize = button.size;
+
+    showMenu<AppMenuAction>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        buttonPosition.dx + buttonSize.width,
+        buttonPosition.dy,
+        buttonPosition.dx,
+        buttonPosition.dy + buttonSize.height,
+      ),
+      items: buildAppMenuEntries(session),
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ).then((action) {
+      if (!mounted) return;
+      if (action != null) {
+        switch (action) {
+          case AppMenuAction.open:
+            _openVideo(null);
+          case AppMenuAction.precise:
+            session.setPrecise(!session.precise);
+          case AppMenuAction.removeAudio:
+            session.setRemoveAudio(!session.removeAudio);
+          case AppMenuAction.settings:
+            showSettingsSheet(
+              context,
+              settings: widget.settings,
+              onChanged: widget.onSettingsChanged ?? (_) {},
+            );
+          case AppMenuAction.about:
+            showVideoTrimmerAboutSheet(context);
+        }
+      }
+    });
+  }
+
+  Widget _buildVideoTitle(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        session.displayName!,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      ),
+    );
+  }
+
+  Widget _buildFullscreenButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _toggleFullscreen,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.fullscreen,
+            color: colorScheme.onSurface,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleFullscreen() async {
+    final isFullscreen = await windowManager.isFullScreen();
+    await windowManager.setFullScreen(!isFullscreen);
+  }
+}
+
+/// Window listener for fullscreen state changes
+class _WindowListener extends WindowListener {
+  _WindowListener({required this.onFullscreenChange});
+  final void Function(bool isFullscreen) onFullscreenChange;
+
+  @override
+  void onWindowEnterFullScreen() {
+    onFullscreenChange(true);
+  }
+
+  @override
+  void onWindowLeaveFullScreen() {
+    onFullscreenChange(false);
   }
 }
 

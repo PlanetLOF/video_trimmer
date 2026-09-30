@@ -92,14 +92,11 @@ class VideoSession extends ChangeNotifier {
       return;
     }
     try {
-      final player = Player();
+      final player = Player(configuration: PlayerConfiguration(vo: 'gpu-next'));
       _player = player;
       _controller = VideoController(
         player,
-        configuration: VideoControllerConfiguration(
-          vo: 'libmpv',
-          hwdec: 'auto-safe',
-        ),
+        configuration: VideoControllerConfiguration(hwdec: 'auto-unsafe'),
       );
       _subscriptions.add(
         player.stream.position.listen((value) {
