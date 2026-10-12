@@ -181,15 +181,18 @@ class _StartEndRowState extends State<StartEndRow> {
         ),
         child: Row(
           children: [
-            IconButton.filled(
-              iconSize: 24,
-              icon: Icon(
-                _session.playing
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
+            Padding(
+              padding: const EdgeInsets.all(6.0),
+              child: IconButton.filled(
+                iconSize: 24,
+                icon: Icon(
+                  _session.playing
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                ),
+                tooltip: 'Play / Pause (Space)',
+                onPressed: _session.togglePlay,
               ),
-              tooltip: 'Play / Pause (Space)',
-              onPressed: _session.togglePlay,
             ),
             const SizedBox(width: 4),
             Container(width: 1, height: 20, color: colorScheme.outlineVariant),

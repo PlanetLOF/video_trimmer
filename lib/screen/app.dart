@@ -334,48 +334,51 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+        child: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.movie_outlined,
+                    size: 48,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
                 ),
-                child: Icon(
-                  Icons.movie_outlined,
-                  size: 48,
-                  color: colorScheme.onPrimaryContainer,
+                const SizedBox(height: 20),
+                Text('Drop a video file here', style: textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  'or click Open to browse your files. Trimming works without re-encoding.',
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.outline,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text('Drop a video file here', style: textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(
-                'or click Open to browse your files. Trimming works without re-encoding.',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.outline,
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => _openVideo(null),
+                  icon: const Icon(Icons.folder_open),
+                  label: const Text('Open'),
                 ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => _openVideo(null),
-                icon: const Icon(Icons.folder_open),
-                label: const Text('Open'),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Tip: you can also drag & drop a video onto this window.',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outline,
+                const SizedBox(height: 12),
+                Text(
+                  'Tip: you can also drag & drop a video onto this window.',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.outline,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
