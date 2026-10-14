@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../util/timecode.dart';
+import '../common/trim_selection.dart';
 import '../common/typography.dart';
 import '../common/video_session.dart';
 
@@ -86,6 +87,8 @@ class _TimelineState extends State<Timeline> {
 
   VideoSession get session => widget.session;
 
+  TrimSelection get trim => session.trim;
+
   double _xForMs(int ms, double width) {
     final durationMs = session.duration.inMilliseconds;
     if (durationMs <= 0) {
@@ -99,7 +102,7 @@ class _TimelineState extends State<Timeline> {
     if (width <= 0) {
       return null;
     }
-    final selection = session.selection;
+    final selection = trim.selection;
     if (selection == null) {
       return null;
     }
@@ -137,7 +140,7 @@ class _TimelineState extends State<Timeline> {
   }
 
   void _onDragUpdate(double x, double width) {
-    final selection = session.selection;
+    final selection = trim.selection;
     final move = dragMove(
       duration: session.duration,
       fraction: x.clamp(0.0, width) / width,
@@ -161,10 +164,10 @@ class _TimelineState extends State<Timeline> {
     };
     final (start, end) = selection;
     if (drag.start != start) {
-      session.updateStartMs(drag.start);
+      trim.updateStartMs(drag.start);
     }
     if (drag.end != end) {
-      session.updateEndMs(drag.end);
+      trim.updateEndMs(drag.end);
     }
   }
 
@@ -204,7 +207,7 @@ class _TimelineState extends State<Timeline> {
                     painter: _TimelinePainter(
                       durationMs: session.duration.inMilliseconds,
                       positionMs: session.position.inMilliseconds,
-                      selection: session.selection,
+                      selection: trim.selection,
                       colorScheme: Theme.of(context).colorScheme,
                       hovered: hovered,
                       active: active,

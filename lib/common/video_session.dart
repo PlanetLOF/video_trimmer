@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../util/probe.dart';
-import '../util/timecode.dart';
+import 'trim_selection.dart';
 
 /// The playback calls a session makes. media_kit's [Player] reaches it through
 /// [_MediaKitDriver], and a test can hand a session a stub instead, so that
@@ -38,24 +37,31 @@ class _MediaKitDriver implements PlayerDriver {
   Future<void> seek(Duration position) => _player.seek(position);
 }
 
-/// Owns the media_kit [Player], the playback streams, and the trim selection
-/// state. The source of truth for position/duration/selection that the UI
-/// renders. The media_kit player is created lazily by [init] so widgets can
-/// be tested without a running player; a [PlayerDriver] stands in for it when
-/// even that lazy creation has to be skipped.
+/// Owns the media_kit [Player], the playback streams, and the [TrimSelection]
+/// the UI trims from. The source of truth for position/duration/selection
+/// that the UI renders. The media_kit player is created lazily by [init] so
+/// widgets can be tested without a running player; a [PlayerDriver] stands in
+/// for it when even that lazy creation has to be skipped.
 class VideoSession extends ChangeNotifier {
   VideoSession({
     Probe? probe,
     bool initOnConstruct = true,
     PlayerDriver? driver,
-  }) : _probe = probe ?? Probe() {
+  }) : _probe = probe ?? Probe(),
+       _trim = TrimSelection() {
     _driver = driver;
+    _trim.addListener(notifyListeners);
     if (initOnConstruct) {
       init();
     }
   }
 
   final Probe _probe;
+
+  /// The entry texts, their parsed values and the defaults they fall back to.
+  /// Notifies through this session, so the widgets keep listening to one
+  /// notifier.
+  final TrimSelection _trim;
 
   /// The injected driver, or [_MediaKitDriver] once [init] has created the
   /// media_kit player. Null while neither exists.
@@ -80,18 +86,14 @@ class VideoSession extends ChangeNotifier {
   bool _removeAudio = false;
   int _fileId = 0;
 
-  String? _startText;
-  String? _endText;
-  int? _startMs;
-  int? _endMs;
-  bool? _startError;
-  bool? _endError;
-
   bool _isOpen = false;
 
   Player? get player => _player;
   VideoController? get controller => _controller;
   Future<void> get ready => _ready.future;
+
+  /// The trim selection the timeline drags and the entry fields edit.
+  TrimSelection get trim => _trim;
 
   /// Whatever drives playback: the injected [PlayerDriver] when there is one,
   /// otherwise a wrapper around the media_kit player [init] created.
@@ -112,21 +114,6 @@ class VideoSession extends ChangeNotifier {
   bool get doNotDefaultToMp4 => _doNotDefaultToMp4;
   bool get precise => _precise;
   bool get removeAudio => _removeAudio;
-
-  String? get startText => _startText;
-  String? get endText => _endText;
-
-  /// The parsed start/end timestamps in milliseconds, or null when invalid.
-  int? get startMs => _startMs;
-  int? get endMs => _endMs;
-  bool get startError => _startError ?? false;
-  bool get endError => _endError ?? false;
-
-  bool get selectionValid =>
-      _startMs != null && _endMs != null && _startMs! < _endMs!;
-
-  /// A snapshot of the valid selection used for trimming.
-  (int, int)? get selection => selectionValid ? (_startMs!, _endMs!) : null;
 
   /// Creates the media_kit player and subscribes to its streams. Safe to call
   /// multiple times; errors are swallowed so the UI can show them instead.
@@ -164,7 +151,7 @@ class VideoSession extends ChangeNotifier {
               _duration == Duration.zero && value != Duration.zero;
           _duration = value;
           if (firstDuration) {
-            _applyDefaultEntries();
+            _trim.applyDefaultEntries(value);
           }
           notifyListeners();
         }),
@@ -208,15 +195,14 @@ class VideoSession extends ChangeNotifier {
     _displayName = path.split(RegExp(r'[\\/]')).last;
     _isOpen = true;
     _fileId++;
-    _startText = null;
-    _endText = null;
+    _trim.reset();
     _doNotDefaultToMp4 = false;
     _hasError = false;
     _loading = true;
     _hasVideo = true;
     _position = Duration.zero;
     _duration = Duration.zero;
-    _applyDefaultEntries();
+    _trim.applyDefaultEntries(_duration);
     notifyListeners();
 
     await init();
@@ -238,65 +224,6 @@ class VideoSession extends ChangeNotifier {
     _doNotDefaultToMp4 = result.hasPcmAudio;
     _frameTime = result.frameTime;
     notifyListeners();
-  }
-
-  void _applyDefaultEntries() {
-    final durationMs = _duration.inMilliseconds;
-    if (durationMs <= 0) {
-      return;
-    }
-    final hasStart = _startText != null;
-    final hasEnd = _endText != null;
-    if (hasStart && hasEnd) {
-      return;
-    }
-
-    var start = durationMs ~/ 3;
-    var end = math.max(durationMs ~/ 3 * 2, start + 1);
-    var startAssigned = false;
-    var endAssigned = false;
-
-    if (!hasStart) {
-      start = hasEnd ? 0 : start;
-      _startText = timeToEntryText(Duration(milliseconds: start));
-      startAssigned = true;
-    }
-    if (!hasEnd) {
-      end = hasStart ? durationMs : end;
-      _endText = timeToEntryText(Duration(milliseconds: end));
-      endAssigned = true;
-    }
-
-    if (startAssigned || endAssigned) {
-      _validate();
-    }
-  }
-
-  void setStartText(String text) {
-    if (text == _startText) {
-      return;
-    }
-    _startText = text;
-    _validate();
-    notifyListeners();
-  }
-
-  void setEndText(String text) {
-    if (text == _endText) {
-      return;
-    }
-    _endText = text;
-    _validate();
-    notifyListeners();
-  }
-
-  void _validate() {
-    _startMs = timestamp(_startText ?? '');
-    _endMs = timestamp(_endText ?? '');
-    _startError = _startMs == null;
-    _endError =
-        _endMs == null ||
-        (_startMs != null && _endMs != null && _startMs! >= _endMs!);
   }
 
   Future<void> togglePlay() async {
@@ -339,34 +266,12 @@ class VideoSession extends ChangeNotifier {
 
   /// Sets the start timestamp to the current playback position.
   void setStartAsPosition() {
-    final ms = _position.inMicroseconds ~/ 1000;
-    _startText = timeToEntryText(Duration(milliseconds: ms));
-    _validate();
-    notifyListeners();
+    _trim.updateStartMs(_position.inMicroseconds ~/ 1000);
   }
 
   /// Sets the end timestamp to the current playback position.
   void setEndAsPosition() {
-    final ms = _position.inMicroseconds ~/ 1000;
-    _endText = timeToEntryText(Duration(milliseconds: ms));
-    _validate();
-    notifyListeners();
-  }
-
-  /// Updates the start timestamp from an external source (timeline drag),
-  /// rounded to the entry-text resolution.
-  void updateStartMs(int ms) {
-    _startText = timeToEntryText(Duration(milliseconds: ms));
-    _validate();
-    notifyListeners();
-  }
-
-  /// Updates the end timestamp from an external source (timeline drag),
-  /// rounded to the entry-text resolution.
-  void updateEndMs(int ms) {
-    _endText = timeToEntryText(Duration(milliseconds: ms));
-    _validate();
-    notifyListeners();
+    _trim.updateEndMs(_position.inMicroseconds ~/ 1000);
   }
 
   void setPrecise(bool value) {
@@ -391,6 +296,7 @@ class VideoSession extends ChangeNotifier {
       subscription.cancel();
     }
     unawaited(_player?.dispose());
+    _trim.dispose();
     super.dispose();
   }
 }

@@ -155,11 +155,12 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   }
 
   Future<void> _verifyAndTrim() async {
-    if (!session.selectionValid) {
+    final trim = session.trim;
+    if (!trim.selectionValid) {
       return;
     }
-    final start = session.startText!;
-    final end = session.endText!;
+    final start = trim.startText!;
+    final end = trim.endText!;
     final inputPath = session.inputPath!;
 
     final outputPath = await showSaveDialog(

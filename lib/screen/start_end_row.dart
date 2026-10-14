@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../common/typography.dart';
+import '../common/trim_selection.dart';
 import '../common/video_session.dart';
 
 /// Bottom toolbar combining playback controls (step back / play-pause / step
@@ -29,12 +30,13 @@ class _StartEndRowState extends State<StartEndRow> {
   bool _syncing = false;
 
   VideoSession get _session => widget.session;
+  TrimSelection get _trim => _session.trim;
 
   @override
   void initState() {
     super.initState();
-    _startCtrl = TextEditingController(text: _session.startText ?? '');
-    _endCtrl = TextEditingController(text: _session.endText ?? '');
+    _startCtrl = TextEditingController(text: _trim.startText ?? '');
+    _endCtrl = TextEditingController(text: _trim.endText ?? '');
     _session.addListener(_onSessionChanged);
   }
 
@@ -55,13 +57,13 @@ class _StartEndRowState extends State<StartEndRow> {
   }
 
   void _syncFromSession() {
-    final sessionStart = _session.startText ?? '';
+    final sessionStart = _trim.startText ?? '';
     if (sessionStart != _startCtrl.text) {
       _syncing = true;
       _startCtrl.text = sessionStart;
       _syncing = false;
     }
-    final sessionEnd = _session.endText ?? '';
+    final sessionEnd = _trim.endText ?? '';
     if (sessionEnd != _endCtrl.text) {
       _syncing = true;
       _endCtrl.text = sessionEnd;
@@ -73,14 +75,14 @@ class _StartEndRowState extends State<StartEndRow> {
     if (_syncing) {
       return;
     }
-    _session.setStartText(value);
+    _trim.setStartText(value);
   }
 
   void _onEndChanged(String value) {
     if (_syncing) {
       return;
     }
-    _session.setEndText(value);
+    _trim.setEndText(value);
   }
 
   String _formatPosition(Duration position) {
@@ -212,7 +214,7 @@ class _StartEndRowState extends State<StartEndRow> {
                 onChanged: _onStartChanged,
                 label: 'Start',
                 icon: Icons.flag_outlined,
-                hasError: _session.startError,
+                hasError: _trim.startError,
                 onSetFromPlayhead: _session.setStartAsPosition,
                 setTooltip: 'Set start to current position (I)',
               ),
@@ -224,14 +226,14 @@ class _StartEndRowState extends State<StartEndRow> {
                 onChanged: _onEndChanged,
                 label: 'End',
                 icon: Icons.flag_rounded,
-                hasError: _session.endError,
+                hasError: _trim.endError,
                 onSetFromPlayhead: _session.setEndAsPosition,
                 setTooltip: 'Set end to current position (O)',
               ),
             ),
             const SizedBox(width: 14),
             FilledButton.icon(
-              onPressed: _session.selectionValid ? widget.onRequestTrim : null,
+              onPressed: _trim.selectionValid ? widget.onRequestTrim : null,
               icon: const Icon(Icons.content_cut, size: 18),
               label: const Text('Trim'),
             ),

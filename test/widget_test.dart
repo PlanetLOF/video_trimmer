@@ -412,8 +412,8 @@ void main() {
     final session = VideoSession(initOnConstruct: false);
     addTearDown(session.dispose);
 
-    session.setStartText('not a time');
-    session.setEndText('0:00:05');
+    session.trim.setStartText('not a time');
+    session.trim.setEndText('0:00:05');
 
     await tester.pumpWidget(
       _wrap(StartEndRow(session: session, onRequestTrim: () {})),
@@ -425,7 +425,7 @@ void main() {
     );
     expect(trimButton.onPressed, isNull);
 
-    session.setStartText('0:00:01');
+    session.trim.setStartText('0:00:01');
     await tester.pump();
 
     trimButton = tester.widget<FilledButton>(
@@ -475,8 +475,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // No point has been added yet, so both entries are blank.
-    expect(session.startText, isNull);
-    expect(session.endText, isNull);
+    expect(session.trim.startText, isNull);
+    expect(session.trim.endText, isNull);
 
     final fields = tester
         .widgetList<TextField>(find.byType(TextField))
@@ -512,11 +512,11 @@ void main() {
 
     final empty = entryHeight();
 
-    session.setStartText('0:12.5');
+    session.trim.setStartText('0:12.5');
     await tester.pumpAndSettle();
     expect(entryHeight(), empty);
 
-    session.setStartText('');
+    session.trim.setStartText('');
     await tester.pumpAndSettle();
     expect(entryHeight(), empty);
   });
@@ -534,9 +534,9 @@ void main() {
 
     final valid = tester.getSize(find.byType(TextField).first).height;
 
-    session.setStartText('not a time');
+    session.trim.setStartText('not a time');
     await tester.pumpAndSettle();
-    expect(session.startError, isTrue);
+    expect(session.trim.startError, isTrue);
 
     // Outlined, not grown: an `errorText` of any kind would reserve the error
     // line and push this entry and its neighbour out of alignment.

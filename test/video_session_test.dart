@@ -85,20 +85,20 @@ void main() {
         await probe.resolve(0, _pcm);
         expect(session.doNotDefaultToMp4, isTrue);
 
-        session.setStartText('0:04.0');
-        session.setEndText('0:02.0');
+        session.trim.setStartText('0:04.0');
+        session.trim.setEndText('0:02.0');
         session.setRemoveAudio(true);
         await session.seek(const Duration(seconds: 3));
 
         driver.failNextOpen = true;
         await session.open('broken.mp4');
         expect(session.hasError, isTrue);
-        expect(session.startText, isNull);
+        expect(session.trim.startText, isNull);
         expect(session.position, Duration.zero);
 
         await session.open('a.mp4');
-        expect(session.startText, isNull);
-        expect(session.endText, isNull);
+        expect(session.trim.startText, isNull);
+        expect(session.trim.endText, isNull);
         expect(session.position, Duration.zero);
         expect(session.duration, Duration.zero);
         expect(session.doNotDefaultToMp4, isFalse);
@@ -135,15 +135,15 @@ void main() {
       );
       addTearDown(session.dispose);
 
-      session.setStartText('0:04.0');
-      session.setEndText('0:02.0');
-      expect(session.endError, isTrue);
+      session.trim.setStartText('0:04.0');
+      session.trim.setEndText('0:02.0');
+      expect(session.trim.endError, isTrue);
 
       await session.open('a.mp4');
       // The entry text is cleared, but nothing revalidates until the player
       // reports a duration, which is when _applyDefaultEntries runs.
-      expect(session.endText, isNull);
-      expect(session.endError, isTrue);
+      expect(session.trim.endText, isNull);
+      expect(session.trim.endError, isTrue);
     });
   });
 
@@ -201,13 +201,13 @@ void main() {
       session.seek(const Duration(seconds: 3, milliseconds: 400));
 
       session.setStartAsPosition();
-      expect(session.startText, '0:03.4');
-      expect(session.startMs, 3400);
+      expect(session.trim.startText, '0:03.4');
+      expect(session.trim.startMs, 3400);
 
       session.seek(const Duration(minutes: 1, milliseconds: 240));
       session.setEndAsPosition();
-      expect(session.endText, '1:00.2');
-      expect(session.endMs, 60200);
+      expect(session.trim.endText, '1:00.2');
+      expect(session.trim.endMs, 60200);
     });
   });
 
@@ -284,6 +284,30 @@ void main() {
       await session.stepBack();
       expect(session.position, Duration.zero);
       expect(driver.seeks, [Duration.zero]);
+    });
+  });
+
+  group('trim relay', () {
+    test('a selection change reaches the session listeners', () async {
+      final session = VideoSession(
+        initOnConstruct: false,
+        probe: _FakeProbe(),
+        driver: _FakeDriver(),
+      );
+      addTearDown(session.dispose);
+
+      var notified = 0;
+      session.addListener(() => notified++);
+
+      session.trim.setStartText('0:01.0');
+      expect(notified, 1);
+      session.trim.setStartText('0:01.0');
+      expect(notified, 1);
+
+      session.trim.updateEndMs(2000);
+      expect(notified, 2);
+      session.setStartAsPosition();
+      expect(notified, 3);
     });
   });
 
