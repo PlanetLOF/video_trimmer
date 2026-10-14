@@ -149,24 +149,24 @@ String _fileName(String path) {
 
 class _TrimmingDialog extends StatefulWidget {
   const _TrimmingDialog({
-    this.ffmpeg,
-    this.inputPath,
-    this.outputPath,
-    this.start,
-    this.end,
-    this.reencode,
-    this.noAudio,
-    this.onFinished,
+    required this.ffmpeg,
+    required this.inputPath,
+    required this.outputPath,
+    required this.start,
+    required this.end,
+    required this.reencode,
+    required this.noAudio,
+    required this.onFinished,
   });
 
-  final Ffmpeg? ffmpeg;
-  final String? inputPath;
-  final String? outputPath;
-  final String? start;
-  final String? end;
-  final bool? reencode;
-  final bool? noAudio;
-  final void Function(TrimOutcome)? onFinished;
+  final Ffmpeg ffmpeg;
+  final String inputPath;
+  final String outputPath;
+  final String start;
+  final String end;
+  final bool reencode;
+  final bool noAudio;
+  final void Function(TrimOutcome) onFinished;
 
   @override
   State<_TrimmingDialog> createState() => _TrimmingDialogState();
@@ -183,19 +183,18 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
   }
 
   Future<void> _run() async {
-    final ffmpeg = widget.ffmpeg!;
     final FfmpegProcess process;
     try {
-      process = await ffmpeg.start(
-        inputPath: widget.inputPath!,
-        outputPath: widget.outputPath!,
-        start: widget.start!,
-        end: widget.end!,
-        reencode: widget.reencode!,
-        noAudio: widget.noAudio!,
+      process = await widget.ffmpeg.start(
+        inputPath: widget.inputPath,
+        outputPath: widget.outputPath,
+        start: widget.start,
+        end: widget.end,
+        reencode: widget.reencode,
+        noAudio: widget.noAudio,
       );
     } catch (_) {
-      widget.onFinished!(TrimOutcome(_kSpawnFailed, ''));
+      widget.onFinished(TrimOutcome(_kSpawnFailed, ''));
       return;
     }
     if (!mounted) {
@@ -216,10 +215,10 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
 
   void _finish(TrimOutcome outcome) {
     if (_cancelled && outcome.exitCode != _kSpawnFailed) {
-      widget.onFinished!(TrimOutcome(_kCancelRequested, ''));
+      widget.onFinished(TrimOutcome(_kCancelRequested, ''));
       return;
     }
-    widget.onFinished!(outcome);
+    widget.onFinished(outcome);
   }
 
   void _requestCancel() {
@@ -256,7 +255,7 @@ class _TrimmingDialogState extends State<_TrimmingDialog> {
               ),
               const SizedBox(height: 8),
               Text(
-                _fileName(widget.outputPath ?? ''),
+                _fileName(widget.outputPath),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall

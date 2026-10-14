@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
@@ -45,12 +43,14 @@ class AppShortcuts extends StatelessWidget {
     required this.session,
     required this.onTrim,
     required this.onOpen,
+    required this.onQuit,
     required this.child,
   });
 
   final VideoSession session;
   final VoidCallback onTrim;
   final VoidCallback onOpen;
+  final VoidCallback onQuit;
   final Widget child;
 
   bool get _inTextField {
@@ -86,7 +86,7 @@ class AppShortcuts extends StatelessWidget {
         ),
         _TrimIntent: CallbackAction<Intent>(onInvoke: (_) => onTrim()),
         _OpenIntent: CallbackAction<Intent>(onInvoke: (_) => onOpen()),
-        _QuitIntent: CallbackAction<Intent>(onInvoke: (_) => exit(0)),
+        _QuitIntent: CallbackAction<Intent>(onInvoke: (_) => onQuit()),
       },
       child: Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{

@@ -266,16 +266,16 @@ class _TimelinePainter extends CustomPainter {
     }
 
     if (band != null) {
-      final selection = RRect.fromRectAndRadius(
+      final selectionRect = RRect.fromRectAndRadius(
         Rect.fromLTRB(band.xStart, _bandTop, band.xEnd, _bandBottom),
         const Radius.circular(5),
       );
       canvas.drawRRect(
-        selection,
+        selectionRect,
         Paint()..color = colorScheme.primary.withValues(alpha: 0.38),
       );
       canvas.drawRRect(
-        selection.deflate(_selectionBorderWidth / 2),
+        selectionRect.deflate(_selectionBorderWidth / 2),
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = _selectionBorderWidth

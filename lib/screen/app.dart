@@ -85,6 +85,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
 
   bool _dragOver = false;
   bool _isFullscreen = false;
+  bool _sessionDisposed = false;
   late final _WindowListener _windowListener;
 
   VideoSession get session => _session;
@@ -112,10 +113,33 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
   @override
   void dispose() {
     windowManager.removeListener(_windowListener);
-    if (widget.session == null) {
-      _session.dispose();
-    }
+    _disposeSession();
     super.dispose();
+  }
+
+  /// Releases the session when this widget owns it. [dispose] covers the normal
+  /// path; [_quit] covers the one where the window goes away without the tree
+  /// ever unmounting.
+  void _disposeSession() {
+    if (_sessionDisposed || widget.session != null) {
+      return;
+    }
+    _sessionDisposed = true;
+    _session.dispose();
+  }
+
+  /// Tears the app down from the quit shortcut.
+  ///
+  /// `exit(0)` killed the VM on the spot, so [dispose] never ran and the
+  /// media_kit player was never disposed; nothing unmounts the tree when the
+  /// native window is destroyed either, so the release is driven from here.
+  /// `windowManager.destroy()` rather than `close()` because a close is swallowed
+  /// while prevent-close is set and only closes the window on macOS, whereas
+  /// destroy clears that flag, posts a quit message on Windows, and calls
+  /// `NSApp.terminate` on macOS.
+  Future<void> _quit() async {
+    _disposeSession();
+    await windowManager.destroy();
   }
 
   Future<void> _openVideo(String? pathOverride) async {
@@ -185,6 +209,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
       session: session,
       onTrim: _verifyAndTrim,
       onOpen: () => _openVideo(null),
+      onQuit: _quit,
       child: DropTarget(
         onDragEntered: (_) => _setDragOver(true),
         onDragExited: (_) => _setDragOver(false),
