@@ -7,15 +7,12 @@ import '../common/typography.dart';
 import '../common/video_session.dart';
 
 const _tolerance = 8.0;
-const _trackHeight = 64.0;
+const _trackHeight = 74.0;
 
 enum _DragType { scrub, start, end }
 
 enum _HandleKind { start, end }
 
-/// A scrubber showing the full duration, the selected region with resize
-/// handles, and the current playback position. Dragging near the handles
-/// resizes the selection; dragging anywhere else seeks.
 class Timeline extends StatefulWidget {
   const Timeline({super.key, required this.session});
 
@@ -60,7 +57,6 @@ class _TimelineState extends State<Timeline> {
     return null;
   }
 
-  /// The edge being dragged, or null while scrubbing or idle.
   _HandleKind? get _activeHandle => switch (_dragType) {
     _DragType.start => _HandleKind.start,
     _DragType.end => _HandleKind.end,
@@ -135,7 +131,7 @@ class _TimelineState extends State<Timeline> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 26, right: 26, top: 8, bottom: 4),
+      padding: const EdgeInsets.only(left: 26, right: 26, top: 0, bottom: 2),
       child: SizedBox(
         height: _trackHeight,
         child: LayoutBuilder(
@@ -197,13 +193,18 @@ class _TimelinePainter extends CustomPainter {
   });
 
   static const _bandTop = 8.0;
-  static const _bandHeight = 34.0;
+  static const _bandHeight = 44.0;
   static const _bandBottom = _bandTop + _bandHeight;
   static const _labelBaseline = _trackHeight - 2;
   static const _handleHalfWidth = 6.0;
   static const _handleGrow = 1.5;
-  static const _handleOverhang = 4.0;
   static const _handleRadius = 5.0;
+  static const _dotRadius = 1.2;
+  static const _dotColumns = 2;
+  static const _dotRows = 3;
+  static const _dotRowSpacing = 8.0;
+  static const _playheadHalfHeight = 13.0;
+  static const _selectionBorderWidth = 1.0;
 
   final int durationMs;
   final int positionMs;
@@ -265,12 +266,20 @@ class _TimelinePainter extends CustomPainter {
     }
 
     if (band != null) {
+      final selection = RRect.fromRectAndRadius(
+        Rect.fromLTRB(band.xStart, _bandTop, band.xEnd, _bandBottom),
+        const Radius.circular(5),
+      );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTRB(band.xStart, _bandTop, band.xEnd, _bandBottom),
-          const Radius.circular(5),
-        ),
+        selection,
         Paint()..color = colorScheme.primary.withValues(alpha: 0.38),
+      );
+      canvas.drawRRect(
+        selection.deflate(_selectionBorderWidth / 2),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _selectionBorderWidth
+          ..color = colorScheme.primary,
       );
 
       _drawLabel(
@@ -293,8 +302,8 @@ class _TimelinePainter extends CustomPainter {
       ..color = colorScheme.onSurface
       ..strokeWidth = 2;
     canvas.drawLine(
-      Offset(xPosition, trackY - 10),
-      Offset(xPosition, trackY + 10),
+      Offset(xPosition, trackY - _playheadHalfHeight),
+      Offset(xPosition, trackY + _playheadHalfHeight),
       playheadPaint,
     );
 
@@ -324,12 +333,7 @@ class _TimelinePainter extends CustomPainter {
   }) {
     final half = _handleHalfWidth + _handleGrow * emphasis;
     final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTRB(
-        x - half,
-        _bandTop - _handleOverhang,
-        x + half,
-        _bandBottom + _handleOverhang,
-      ),
+      Rect.fromLTRB(x - half, _bandTop, x + half, _bandBottom),
       const Radius.circular(_handleRadius),
     );
     final path = Path()..addRRect(rrect);
@@ -340,6 +344,7 @@ class _TimelinePainter extends CustomPainter {
 
     final primary = colorScheme.primary;
     final onPrimary = colorScheme.onPrimary;
+    final gloss = 0.08 + 0.07 * emphasis;
     canvas.drawPath(
       path,
       Paint()
@@ -347,24 +352,22 @@ class _TimelinePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color.lerp(primary, onPrimary, 0.06)!,
-            Color.lerp(primary, onPrimary, 0.15 * emphasis)!,
+            Color.lerp(primary, onPrimary, gloss)!,
+            Color.lerp(primary, onPrimary, gloss * 0.5)!,
           ],
         ).createShader(rrect.outerRect),
     );
 
     final centerY = _bandTop + _bandHeight / 2;
-    final barPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
+    final dotPaint = Paint()
       ..color = onPrimary.withValues(alpha: 0.85 + 0.15 * emphasis);
-    const barCount = 3;
-    const barSpacing = 3.0;
-    const barHalfHeight = (barCount - 1) * barSpacing / 2;
-    for (var i = 0; i < barCount; i++) {
-      final y = centerY - barHalfHeight + i * barSpacing;
-      canvas.drawLine(Offset(x, y - 3), Offset(x, y + 3), barPaint);
+    final columnSpacing = 2 * (half + _dotRadius) / (_dotColumns + 1);
+    for (var row = 0; row < _dotRows; row++) {
+      final y = centerY + (row - (_dotRows - 1) / 2) * _dotRowSpacing;
+      for (var column = 0; column < _dotColumns; column++) {
+        final bx = x + (column - (_dotColumns - 1) / 2) * columnSpacing;
+        canvas.drawCircle(Offset(bx, y), _dotRadius, dotPaint);
+      }
     }
   }
 

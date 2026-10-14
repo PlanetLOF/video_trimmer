@@ -288,7 +288,7 @@ class _VideoTrimmerHomeState extends State<VideoTrimmerHome> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: .circular(12),
