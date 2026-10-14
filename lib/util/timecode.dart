@@ -94,10 +94,19 @@ int _fracToMs(String frac) {
   return value * scale;
 }
 
+/// Rounds [ms] to the nearest tenth of a second, the resolution
+/// [timeToEntryText] writes.
+///
+/// A dragged handle snaps to what the entry field would show, and sharing
+/// the formatter's arithmetic is what keeps the two from drifting apart.
+int roundToTenthMs(int ms) => _roundToTenth(ms) * 100;
+
+int _roundToTenth(int ms) => (ms + 50) ~/ 100;
+
 /// Formats [duration] as `[h:]mm:ss.t`, rounded to the nearest tenth of a
 /// second, for the entry text field.
 String timeToEntryText(Duration duration) {
-  final totalTenths = (duration.inMilliseconds + 50) ~/ 100;
+  final totalTenths = _roundToTenth(duration.inMilliseconds);
   final hours = totalTenths ~/ 36000;
   final minutes = (totalTenths % 36000) ~/ 600;
   final seconds = (totalTenths % 600) ~/ 10;

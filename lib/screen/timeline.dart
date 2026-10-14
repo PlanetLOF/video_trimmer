@@ -11,7 +11,65 @@ const _trackHeight = 74.0;
 
 enum _DragType { scrub, start, end }
 
-enum _HandleKind { start, end }
+/// Which edge of the selection the pointer is holding. The two edges swap
+/// rather than cross, so an edge that walks into the other one hands the
+/// pointer over instead of the pointer losing the edge it grabbed.
+enum HandleKind { start, end }
+
+/// The selection one drag move leaves behind, and the handle the drag stays
+/// attached to, which is the other one once they have swapped.
+typedef HandleDrag = ({int start, int end, HandleKind handle});
+
+/// What one drag move on the timeline resolves to: where playback should sit,
+/// and the selection to write when a handle is under the pointer.
+///
+/// Returns null when the timeline has no duration to map the pointer onto.
+/// A pointer that is not on a handle only seeks, which is what makes a scrub
+/// leave the selection alone.
+({int positionUs, HandleDrag? drag})? dragMove({
+  required Duration duration,
+  required double fraction,
+  required (int, int)? selection,
+  required HandleKind? handle,
+}) {
+  if (duration == Duration.zero) {
+    return null;
+  }
+  final positionUs = (duration.inMicroseconds * fraction).round();
+  if (selection == null || handle == null) {
+    return (positionUs: positionUs, drag: null);
+  }
+  // The playhead keeps microsecond precision; only the selection snaps to the
+  // resolution the entry fields show.
+  return (
+    positionUs: positionUs,
+    drag: _dragHandle(selection, handle, roundToTenthMs(positionUs ~/ 1000)),
+  );
+}
+
+/// Moves [handle] to [ms] while it stays on its own side of the other one,
+/// swaps the two when it crosses, and returns null when [ms] lands exactly on
+/// the other handle: the selection has to keep a start before an end, and a
+/// collapsed one has nowhere to put a pointer.
+HandleDrag? _dragHandle((int, int) selection, HandleKind handle, int ms) {
+  final (currentStart, currentEnd) = selection;
+  return switch (handle) {
+    HandleKind.start when ms == currentEnd => null,
+    HandleKind.start when ms > currentEnd => (
+      start: currentEnd,
+      end: ms,
+      handle: HandleKind.end,
+    ),
+    HandleKind.start => (start: ms, end: currentEnd, handle: HandleKind.start),
+    HandleKind.end when ms == currentStart => null,
+    HandleKind.end when ms < currentStart => (
+      start: ms,
+      end: currentStart,
+      handle: HandleKind.start,
+    ),
+    HandleKind.end => (start: currentStart, end: ms, handle: HandleKind.end),
+  };
+}
 
 class Timeline extends StatefulWidget {
   const Timeline({super.key, required this.session});
@@ -37,7 +95,7 @@ class _TimelineState extends State<Timeline> {
     return fraction * width;
   }
 
-  _HandleKind? _handleAt(double x, double width) {
+  HandleKind? _handleAt(double x, double width) {
     if (width <= 0) {
       return null;
     }
@@ -49,24 +107,24 @@ class _TimelineState extends State<Timeline> {
     final xStart = _xForMs(start, width);
     final xEnd = _xForMs(end, width);
     if ((x - xEnd).abs() <= _tolerance) {
-      return _HandleKind.end;
+      return HandleKind.end;
     }
     if ((x - xStart).abs() <= _tolerance) {
-      return _HandleKind.start;
+      return HandleKind.start;
     }
     return null;
   }
 
-  _HandleKind? get _activeHandle => switch (_dragType) {
-    _DragType.start => _HandleKind.start,
-    _DragType.end => _HandleKind.end,
+  HandleKind? get _activeHandle => switch (_dragType) {
+    _DragType.start => HandleKind.start,
+    _DragType.end => HandleKind.end,
     _DragType.scrub => null,
   };
 
   void _onDragStart(double x, double width) {
     _dragType = switch (_handleAt(x, width)) {
-      _HandleKind.start => _DragType.start,
-      _HandleKind.end => _DragType.end,
+      HandleKind.start => _DragType.start,
+      HandleKind.end => _DragType.end,
       null => _DragType.scrub,
     };
     setState(() {});
@@ -79,52 +137,34 @@ class _TimelineState extends State<Timeline> {
   }
 
   void _onDragUpdate(double x, double width) {
-    final xClamped = x.clamp(0.0, width);
-    final value = xClamped / width;
-
-    final durationUs = session.duration.inMicroseconds;
-    if (durationUs == 0) {
-      return;
-    }
-
-    final timeUs = (durationUs * value).round();
-    unawaited(session.seek(Duration(microseconds: timeUs)));
-
     final selection = session.selection;
-    if (selection == null) {
+    final move = dragMove(
+      duration: session.duration,
+      fraction: x.clamp(0.0, width) / width,
+      selection: selection,
+      handle: _activeHandle,
+    );
+    if (move == null) {
       return;
     }
-    final (_, endMs) = selection;
+    unawaited(session.seek(Duration(microseconds: move.positionUs)));
 
-    final ms = timeUs ~/ 1000;
-    if (_dragType == _DragType.start) {
-      final text = timeToEntryText(Duration(milliseconds: ms));
-      final parsed = timestamp(text);
-      if (parsed == null || parsed == endMs) {
-        return;
-      }
-      if (parsed <= endMs) {
-        session.updateStartMs(parsed);
-      } else {
-        _dragType = _DragType.end;
-        final oldEnd = session.endMs!;
-        session.updateStartMs(oldEnd);
-        session.updateEndMs(parsed);
-      }
-    } else if (_dragType == _DragType.end) {
-      final text = timeToEntryText(Duration(milliseconds: ms));
-      final parsed = timestamp(text);
-      if (parsed == null || parsed == session.startMs) {
-        return;
-      }
-      if (parsed >= session.startMs!) {
-        session.updateEndMs(parsed);
-      } else {
-        _dragType = _DragType.start;
-        final oldStart = session.startMs!;
-        session.updateEndMs(oldStart);
-        session.updateStartMs(parsed);
-      }
+    final drag = move.drag;
+    if (drag == null || selection == null) {
+      return;
+    }
+    // A swap hands the drag to the handle that took the pointer's value, so
+    // the edge under the pointer keeps being the edge under the pointer.
+    _dragType = switch (drag.handle) {
+      HandleKind.start => _DragType.start,
+      HandleKind.end => _DragType.end,
+    };
+    final (start, end) = selection;
+    if (drag.start != start) {
+      session.updateStartMs(drag.start);
+    }
+    if (drag.end != end) {
+      session.updateEndMs(drag.end);
     }
   }
 
@@ -210,8 +250,8 @@ class _TimelinePainter extends CustomPainter {
   final int positionMs;
   final (int, int)? selection;
   final ColorScheme colorScheme;
-  final _HandleKind? hovered;
-  final _HandleKind? active;
+  final HandleKind? hovered;
+  final HandleKind? active;
   final double focus;
 
   @override
@@ -308,10 +348,10 @@ class _TimelinePainter extends CustomPainter {
     );
 
     if (band != null) {
-      for (final kind in _HandleKind.values) {
+      for (final kind in HandleKind.values) {
         _drawHandle(
           canvas,
-          x: kind == _HandleKind.start ? band.xStart : band.xEnd,
+          x: kind == HandleKind.start ? band.xStart : band.xEnd,
           kind: kind,
           emphasis: _emphasisFor(kind),
         );
@@ -319,7 +359,7 @@ class _TimelinePainter extends CustomPainter {
     }
   }
 
-  double _emphasisFor(_HandleKind kind) => switch ((active, hovered)) {
+  double _emphasisFor(HandleKind kind) => switch ((active, hovered)) {
     (final a?, _) when a == kind => 1,
     (_, final h?) when h == kind => focus,
     _ => 0,
@@ -328,7 +368,7 @@ class _TimelinePainter extends CustomPainter {
   void _drawHandle(
     Canvas canvas, {
     required double x,
-    required _HandleKind kind,
+    required HandleKind kind,
     required double emphasis,
   }) {
     final half = _handleHalfWidth + _handleGrow * emphasis;

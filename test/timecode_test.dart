@@ -37,6 +37,55 @@ void main() {
     });
   });
 
+  group('roundToTenthMs', () {
+    test('rounds to the nearest tenth of a second', () {
+      expect(roundToTenthMs(0), 0);
+      expect(roundToTenthMs(49), 0);
+      expect(roundToTenthMs(50), 100);
+      expect(roundToTenthMs(149), 100);
+      expect(roundToTenthMs(150), 200);
+      expect(roundToTenthMs(999), 1000);
+      expect(roundToTenthMs(1234), 1200);
+      expect(roundToTenthMs(1235), 1200);
+      expect(roundToTenthMs(9999), 10000);
+      expect(roundToTenthMs(3600049), 3600000);
+      expect(roundToTenthMs(3600050), 3600100);
+    });
+
+    test('agrees with the entry text it exists to match', () {
+      for (final ms in [
+        0,
+        1,
+        49,
+        50,
+        51,
+        99,
+        100,
+        149,
+        150,
+        250,
+        999,
+        1000,
+        1234,
+        1235,
+        9999,
+        59999,
+        60000,
+        3599999,
+        3600000,
+        3600049,
+        3600050,
+        86399999,
+      ]) {
+        expect(
+          timestamp(timeToEntryText(Duration(milliseconds: ms))),
+          roundToTenthMs(ms),
+          reason: 'at $ms ms',
+        );
+      }
+    });
+  });
+
   group('timeForFilename', () {
     test('strips trailing fractional zeros', () {
       expect(timeForFilename('0:32.0'), '0:32');
