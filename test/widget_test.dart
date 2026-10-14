@@ -5,6 +5,7 @@ import 'package:video_trimmer/screen/app.dart';
 import 'package:video_trimmer/screen/app_menu.dart';
 import 'package:video_trimmer/screen/settings_sheet.dart';
 import 'package:video_trimmer/screen/start_end_row.dart';
+import 'package:video_trimmer/screen/timeline.dart';
 import 'package:video_trimmer/generated/app_version.g.dart';
 import 'package:video_trimmer/common/typography.dart';
 import 'package:video_trimmer/common/app_settings.dart';
@@ -432,6 +433,33 @@ void main() {
       find.widgetWithText(FilledButton, 'Trim'),
     );
     expect(trimButton.onPressed, isNotNull);
+  });
+
+  testWidgets('a position tick repaints the readout and not the page', (
+    tester,
+  ) async {
+    final session = await _pumpApp(tester);
+
+    // The framework calls this for every widget it rebuilds, which is the
+    // only way to notice a build that did not happen.
+    final rebuilt = <Type>[];
+    addTearDown(() => debugOnRebuildDirtyWidget = null);
+    debugOnRebuildDirtyWidget = (element, _) =>
+        rebuilt.add(element.widget.runtimeType);
+
+    // The hook sees the page when the session does notify.
+    session.setPrecise(true);
+    await tester.pump();
+    expect(rebuilt, contains(Scaffold));
+
+    rebuilt.clear();
+    await session.seek(const Duration(seconds: 3));
+    await tester.pump();
+
+    expect(rebuilt, isNot(contains(Scaffold)));
+    expect(rebuilt, isNot(contains(StartEndRow)));
+    expect(rebuilt, isNot(contains(Timeline)));
+    expect(find.text('0:03'), findsOneWidget);
   });
 
   testWidgets('text resolves to the bundled UI and mono families', (

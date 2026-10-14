@@ -202,16 +202,22 @@ class _TimelineState extends State<Timeline> {
                       _onDragUpdate(details.localPosition.dx, width),
                   onPanEnd: (_) => _onDragEnd(),
                   onPanCancel: _onDragEnd,
-                  child: CustomPaint(
-                    size: Size(width, _trackHeight),
-                    painter: _TimelinePainter(
-                      durationMs: session.duration.inMilliseconds,
-                      positionMs: session.position.inMilliseconds,
-                      selection: trim.selection,
-                      colorScheme: Theme.of(context).colorScheme,
-                      hovered: hovered,
-                      active: active,
-                      focus: focus,
+                  // The notifier sits at the bottom of the tree so a tick
+                  // repaints the playhead and nothing above it, leaving the
+                  // gesture and hover handling out of it.
+                  child: ValueListenableBuilder<Duration>(
+                    valueListenable: session.positionListenable,
+                    builder: (context, position, child) => CustomPaint(
+                      size: Size(width, _trackHeight),
+                      painter: _TimelinePainter(
+                        durationMs: session.duration.inMilliseconds,
+                        positionMs: position.inMilliseconds,
+                        selection: trim.selection,
+                        colorScheme: Theme.of(context).colorScheme,
+                        hovered: hovered,
+                        active: active,
+                        focus: focus,
+                      ),
                     ),
                   ),
                 ),

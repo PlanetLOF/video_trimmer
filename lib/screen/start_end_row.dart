@@ -199,9 +199,14 @@ class _StartEndRowState extends State<StartEndRow> {
             const SizedBox(width: 4),
             Container(width: 1, height: 20, color: colorScheme.outlineVariant),
             const SizedBox(width: 10),
-            Text(
-              _formatPosition(_session.position),
-              style: mono.copyWith(fontWeight: FontWeight.w600),
+            // The position is on its own listenable, so this one readout
+            // repaints on a tick instead of the page rebuilding around it.
+            ValueListenableBuilder<Duration>(
+              valueListenable: _session.positionListenable,
+              builder: (context, position, _) => Text(
+                _formatPosition(position),
+                style: mono.copyWith(fontWeight: FontWeight.w600),
+              ),
             ),
             Text(
               ' / ${_formatPosition(_session.duration)}',

@@ -75,7 +75,12 @@ class VideoSession extends ChangeNotifier {
   String? _inputPath;
   String? _displayName;
   Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+
+  /// The playhead position on a notifier of its own. It moves many times a
+  /// second, and notifying the whole session on every tick would rebuild the
+  /// page around it; only the readout and the timeline paint it.
+  final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
+
   Duration? _frameTime;
   bool _playing = false;
   bool _loading = true;
@@ -105,7 +110,13 @@ class VideoSession extends ChangeNotifier {
   int get fileId => _fileId;
 
   Duration get duration => _duration;
-  Duration get position => _position;
+  Duration get position => _position.value;
+
+  /// The position as a listenable of its own, for the widgets that only draw
+  /// it. Keeping it out of [addListener] is what keeps a tick from rebuilding
+  /// the page.
+  ValueListenable<Duration> get positionListenable => _position;
+
   Duration? get frameTime => _frameTime;
   bool get playing => _playing;
   bool get loading => _loading;
@@ -141,8 +152,7 @@ class VideoSession extends ChangeNotifier {
       );
       _subscriptions.add(
         player.stream.position.listen((value) {
-          _position = value;
-          notifyListeners();
+          _position.value = value;
         }),
       );
       _subscriptions.add(
@@ -200,7 +210,7 @@ class VideoSession extends ChangeNotifier {
     _hasError = false;
     _loading = true;
     _hasVideo = true;
-    _position = Duration.zero;
+    _position.value = Duration.zero;
     _duration = Duration.zero;
     _trim.applyDefaultEntries(_duration);
     notifyListeners();
@@ -244,8 +254,7 @@ class VideoSession extends ChangeNotifier {
 
   /// Seeks to an absolute [time].
   Future<void> seek(Duration time) async {
-    _position = time;
-    notifyListeners();
+    _position.value = time;
     await _playback?.seek(time);
   }
 
@@ -257,7 +266,7 @@ class VideoSession extends ChangeNotifier {
       return;
     }
     final delta = Duration(microseconds: direction * frameTime.inMicroseconds);
-    final target = _position + delta;
+    final target = _position.value + delta;
     await seek(target < Duration.zero ? Duration.zero : target);
   }
 
@@ -266,12 +275,12 @@ class VideoSession extends ChangeNotifier {
 
   /// Sets the start timestamp to the current playback position.
   void setStartAsPosition() {
-    _trim.updateStartMs(_position.inMicroseconds ~/ 1000);
+    _trim.updateStartMs(_position.value.inMicroseconds ~/ 1000);
   }
 
   /// Sets the end timestamp to the current playback position.
   void setEndAsPosition() {
-    _trim.updateEndMs(_position.inMicroseconds ~/ 1000);
+    _trim.updateEndMs(_position.value.inMicroseconds ~/ 1000);
   }
 
   void setPrecise(bool value) {
@@ -297,6 +306,7 @@ class VideoSession extends ChangeNotifier {
     }
     unawaited(_player?.dispose());
     _trim.dispose();
+    _position.dispose();
     super.dispose();
   }
 }
