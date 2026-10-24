@@ -148,7 +148,7 @@ class VideoSession extends ChangeNotifier {
       _driver = _MediaKitDriver(player);
       _controller = VideoController(
         player,
-        configuration: VideoControllerConfiguration(hwdec: 'auto-unsafe'),
+        configuration: VideoControllerConfiguration(hwdec: 'auto'),
       );
       _subscriptions.add(
         player.stream.position.listen((value) {
